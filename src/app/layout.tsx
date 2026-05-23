@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
@@ -22,10 +23,12 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${noto.className} bg-stone-50 text-stone-800`}>
-        <div className="max-w-md mx-auto min-h-screen relative">
-          {children}
-          <BottomNav />
-        </div>
+        <SessionProvider>
+          <div className="max-w-md mx-auto min-h-screen relative">
+            {children}
+            <BottomNav />
+          </div>
+        </SessionProvider>
       </body>
     </html>
   );

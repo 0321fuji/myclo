@@ -9,6 +9,7 @@ datasource db {
 
 model ClothingItem {
   id                String    @id @default(cuid())
+  userId            String
   name              String
   category          String
   silhouette        String?
