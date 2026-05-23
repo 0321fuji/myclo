@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MYCLO
 
-## Getting Started
+> 自分のクローゼットからAIがコーデを提案。着る、買う、すべてMYCLOで。
 
-First, run the development server:
+AIパーソナルスタイリストアプリ。クローゼットに服を登録するだけで、天気・気温に合ったコーデをAIが毎日提案します。
+
+## 機能
+
+- **クローゼット管理** — 服の写真を撮って登録。AIが自動でカテゴリ・色・シルエットをタグ付け
+- **AIコーデ提案** — カジュアル / ビジネス / モード / トラッド / スポーツのスタイル別に提案
+- **脱・マンネリ** — 着用頻度の低い服を優先提案。AIが背中を押してくれる
+- **天気連動** — 気温に合わせた重ね着アドバイス（朝開くと今日、夜開くと明日の提案）
+- **これにする** — 決定した服の着用記録を残し、同じコーデを繰り返さない
+
+## 技術スタック
+
+| カテゴリ | 技術 |
+|---------|------|
+| フレームワーク | Next.js 16 (App Router) + TypeScript |
+| スタイリング | Tailwind CSS |
+| データベース | SQLite (Prisma v7 + libsql adapter) |
+| AI | OpenAI GPT-4o / GPT-4o-mini |
+| 天気データ | Open-Meteo API（無料・APIキー不要）|
+
+## セットアップ
 
 ```bash
+# 依存関係インストール
+npm install
+
+# 環境変数設定
+cp .env.example .env
+# .env に OPENAI_API_KEY を入力
+
+# DBマイグレーション
+npx prisma migrate dev
+
+# Prismaクライアント生成
+npx prisma generate
+
+# 開発サーバー起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+http://localhost:3000 で起動します。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 環境変数
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env` ファイルを作成し、以下を設定：
 
-## Learn More
+```
+OPENAI_API_KEY="sk-..."
+DATABASE_URL="file:./prisma/dev.db"
+```
 
-To learn more about Next.js, take a look at the following resources:
+## ロードマップ
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] 背景透過機能（服の画像をきれいに切り抜き）
+- [ ] お気に入り学習（ハートしたコーデを記憶）
+- [ ] 過去コーデ履歴
+- [ ] EC機能（足りないアイテムをその場で購入）
+- [ ] PWA対応（ホーム画面に追加）

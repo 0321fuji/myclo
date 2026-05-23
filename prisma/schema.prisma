@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ClothingItem {
+  id                String    @id @default(cuid())
+  name              String
+  category          String
+  silhouette        String?
+  colors            String
+  tags              String
+  style             String
+  imageUrl          String
+  imageBgRemovedUrl String?
+  wornCount         Int       @default(0)
+  lastWornAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  outfitItems OutfitItem[]
+}
+
+model Outfit {
+  id          String    @id @default(cuid())
+  style       String
+  description String?
+  isFavorite  Boolean   @default(false)
+  wornDate    DateTime?
+  temperature Float?
+  weather     String?
+  createdAt   DateTime  @default(now())
+
+  items OutfitItem[]
+}
+
+model OutfitItem {
+  id             String       @id @default(cuid())
+  outfitId       String
+  clothingItemId String
+  outfit         Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+}
