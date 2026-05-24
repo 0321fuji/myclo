@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Upload, Sparkles, ChevronLeft, Check } from "lucide-react";
+import { Camera, Upload, Sparkles, ChevronLeft, Check, Link2 } from "lucide-react";
 import Image from "next/image";
 import type { Category, Silhouette, StyleType } from "@/lib/types";
 import { CATEGORY_LABELS, STYLE_LABELS, MATERIALS } from "@/lib/types";
@@ -62,6 +62,10 @@ export default function AddClothingPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [urlInput, setUrlInput] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
@@ -114,6 +118,42 @@ export default function AddClothingPage() {
       setAnalyzing(false);
     }
   }, []);
+
+  const handleFetchFromUrl = async () => {
+    const url = urlInput.trim();
+    if (!url) return;
+    setFetchingUrl(true);
+    setUrlError(null);
+    try {
+      const res = await fetch("/api/clothing/from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `エラー (${res.status})`);
+
+      // 取得した情報を全フィールドに反映
+      if (data.imageUrl) {
+        setUploadedUrl(data.imageUrl);
+        setImagePreview(data.imageUrl);
+      }
+      setName(data.name || "");
+      setCategory(data.category || "tops");
+      setSilhouette(data.silhouette || "regular");
+      setColors(data.colors || []);
+      setMaterials(data.materials || []);
+      setTags(data.tags || []);
+      setStyle(data.style || "casual");
+      setAiSuggested(true);
+      setUrlInput("");
+    } catch (e) {
+      console.error(e);
+      setUrlError(e instanceof Error ? e.message : "商品情報の取得に失敗しました");
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -182,13 +222,63 @@ export default function AddClothingPage() {
       </div>
 
       <div className="p-5 space-y-5">
+        {/* URL Auto-fill (NEW) */}
+        <div className="bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl p-4 border border-rose-100">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Sparkles size={14} className="text-rose-500" />
+            <label className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+              商品URLから自動入力
+            </label>
+          </div>
+          <p className="text-[11px] text-stone-500 mb-3 leading-relaxed">
+            ユニクロ・ZARA・楽天などの商品ページURLを貼り付けると、画像・名前・色・素材まで自動入力
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  handleFetchFromUrl();
+                }
+              }}
+              placeholder="https://..."
+              disabled={fetchingUrl}
+              className="flex-1 bg-white rounded-xl px-3 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300 disabled:opacity-50"
+            />
+            <button
+              onClick={handleFetchFromUrl}
+              disabled={!urlInput.trim() || fetchingUrl}
+              className={`px-4 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                !urlInput.trim() || fetchingUrl
+                  ? "bg-stone-100 text-stone-300"
+                  : "bg-rose-400 text-white shadow-sm"
+              }`}
+            >
+              {fetchingUrl ? (
+                <Sparkles size={14} className="animate-pulse" />
+              ) : (
+                <Link2 size={14} />
+              )}
+              {fetchingUrl ? "取得中" : "取得"}
+            </button>
+          </div>
+          {urlError && (
+            <div className="mt-2 text-[11px] text-red-500 bg-red-50 rounded-lg px-2 py-1.5">
+              ⚠️ {urlError}
+            </div>
+          )}
+        </div>
+
         {/* Image Upload (Optional) */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
               写真（任意）
             </label>
-            <span className="text-[10px] text-stone-400">後から追加もできます</span>
+            <span className="text-[10px] text-stone-400">URLから取得 or 手動で追加</span>
           </div>
           {imagePreview ? (
             <div className="relative">
