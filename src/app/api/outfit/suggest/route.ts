@@ -140,11 +140,22 @@ export async function POST(request: NextRequest) {
 1. **多様性を最優先**：同じ服ばかり選ばない。前回と違うアプローチで組み立てる
 2. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
 3. **着用回数の少ない服を優先**：眠っている服を発掘する
-4. **必ずカテゴリのバランスを取る**：トップス＋ボトムス（またはワンピース）を必ず含める。寒い日はアウターも
+4. **カテゴリは1点ずつ**：以下の構成ルールを厳守する
+
+【コーデの構成ルール（厳守）】
+- トップス: 1点（ワンピースを使う場合は0点）
+- ボトムス: 1点（ワンピースを使う場合は0点）
+- ワンピース: トップス+ボトムスの代わりに1点
+- アウター: 0〜1点（寒い日は必須）
+- シューズ: 0〜1点
+- バッグ: 0〜1点
+- アクセサリー: 0〜2点
+
+→ 同じカテゴリから複数選ぶのは絶対NG（トップス2点、ボトムス2点などは不可）
 
 【避けること】
 - ありきたりな「無難なコーデ」だけを提案
-- カテゴリの偏り（全部トップス、など）
+- 同じカテゴリの服を複数選ぶ
 - 季節外れの素材（夏にウール、冬にリネン）
 
 必ずJSONのみ返してください（マークダウン不要）。`,
@@ -186,12 +197,28 @@ ${itemsText}
 
   try {
     const data = JSON.parse(cleaned);
-    const selectedItems = (data.itemIds as string[])
+    const rawSelected = (data.itemIds as string[])
       .map((id: string) => items.find((item) => item.id === id))
       .filter((item): item is ClothingItemData => item !== undefined);
 
+    // カテゴリ重複を除去：各カテゴリは1点（アクセサリーのみ最大2点）
+    // 重複した場合は着用回数が少ない方を優先する
+    const sortedByWornAsc = [...rawSelected].sort((a, b) => a.wornCount - b.wornCount);
+    const seenByCategory = new Map<string, number>();
+    const dedupedSelected: ClothingItemData[] = [];
+    for (const item of sortedByWornAsc) {
+      const limit = item.category === "accessories" ? 2 : 1;
+      const count = seenByCategory.get(item.category) || 0;
+      if (count < limit) {
+        dedupedSelected.push(item);
+        seenByCategory.set(item.category, count + 1);
+      } else {
+        console.warn(`[outfit/suggest] dropped duplicate category item: ${item.name} (${item.category})`);
+      }
+    }
+
     return NextResponse.json({
-      items: selectedItems,
+      items: dedupedSelected,
       style,
       description: data.description,
       reason: data.reason,
