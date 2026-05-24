@@ -107,6 +107,14 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 | POST | `/api/outfit/suggest` | AIコーデ提案 |
 | GET | `/api/weather` | Open-Meteo天気取得 |
 
+## ナレッジモジュール（LEOの専門知識）
+
+LEO（およびゆくゆく他のコーディネーター）には、シキユウスケ氏のファッション知見を `src/lib/shiki/` 配下のナレッジモジュールとして注入している。質問内容に応じて関連モジュールが自動選択される。
+
+- 追加手順：`src/lib/shiki/README.md` 参照
+- 汎用設計パターンドキュメント：`docs/knowledge-modules-pattern.md`
+  - 他プロジェクト（FAQ Bot、教育AI、ロールプレイ等）にも転用可能
+
 ## DBスキーマ変更時の手順
 
 ```bash
