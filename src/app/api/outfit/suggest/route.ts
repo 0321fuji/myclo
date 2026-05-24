@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { buildProfilePromptSnippet } from "@/lib/profile";
 import { getProfileForUser } from "@/lib/profile-server";
+import { buildTrendsPromptSnippet } from "@/lib/trends";
 import type { ClothingItemData, StyleType, OutfitSuggestion } from "@/lib/types";
 import { STYLE_LABELS } from "@/lib/types";
 
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
     ? await getProfileForUser(session.user.id)
     : null;
   const profileSnippet = buildProfilePromptSnippet(profile);
+  const trendsSnippet = buildTrendsPromptSnippet(profile?.gender ?? null);
 
   const allItems = await prisma.clothingItem.findMany({
     where: session?.user?.id ? { userId: session.user.id } : undefined,
@@ -148,10 +150,12 @@ export async function POST(request: NextRequest) {
         content: `あなたは経験豊富なファッションコーディネーターです。ユーザーのクローゼットから、毎回新鮮で多様なコーデを提案します。
 
 【重要な原則】
-1. **多様性を最優先**：同じ服ばかり選ばない。前回と違うアプローチで組み立てる
-2. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
-3. **着用回数の少ない服を優先**：眠っている服を発掘する
-4. **カテゴリは1点ずつ**：以下の構成ルールを厳守する
+1. **「自分では気付かない発見」を提供する**：本人がいつも組むようなありきたりな組み合わせではなく、「その手があったか」と思わせる視点を入れる
+2. **多様性を最優先**：同じ服ばかり選ばない。前回と違うアプローチで組み立てる
+3. **トレンド × パーソナリティ × クローゼットの3軸を統合**：旬の要素を取り入れつつ、ユーザーの個性に合うものだけを選ぶ
+4. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
+5. **着用回数の少ない服を優先**：眠っている服を発掘する
+6. **カテゴリは1点ずつ**：以下の構成ルールを厳守する
 
 【コーデの構成ルール（厳守）】
 - トップス: 1点（ワンピースを使う場合は0点）
@@ -173,7 +177,7 @@ export async function POST(request: NextRequest) {
       },
       {
         role: "user",
-        content: `${profileSnippet ? profileSnippet + "\n\n" : ""}# 今日の条件
+        content: `${profileSnippet ? profileSnippet + "\n\n" : ""}${trendsSnippet}\n\n# 今日の条件
 気温: 最高${maxTemp}℃ / 最低${minTemp}℃
 ${seasonHint}
 ${needsOuterwear ? "→ アウターが必要な気温です。" : "→ アウターは基本不要です。"}
@@ -196,7 +200,7 @@ ${itemsText}
 {
   "itemIds": ["選んだ服のIDを配列で"],
   "description": "コーデの一言タイトル（10〜20文字、テーマが伝わるように）",
-  "reason": "なぜこの組み合わせかの説明（2〜3文。素材や色のロジック、テーマの反映、着回し提案を含めて）"
+  "reason": "なぜこの組み合わせかの説明（2〜3文。トレンド要素 / 骨格・パーソナルカラーとの相性 / 着回し のいずれかには触れること）"
 }`,
       },
     ],

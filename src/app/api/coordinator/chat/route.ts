@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCoordinator } from "@/lib/coordinators";
 import { buildProfilePromptSnippet } from "@/lib/profile";
 import { getProfileForUser } from "@/lib/profile-server";
+import { buildTrendsPromptSnippet } from "@/lib/trends";
 
 let openai: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {
@@ -61,13 +62,17 @@ export async function POST(request: NextRequest) {
     // ユーザープロフィールを取得
     const profile = await getProfileForUser(session.user.id);
     const profileSnippet = buildProfilePromptSnippet(profile);
+    const trendsSnippet = buildTrendsPromptSnippet(profile?.gender ?? null);
 
     const systemPrompt = `${coordinator.systemPrompt}
 
-${profileSnippet ? profileSnippet + "\n\n" : ""}【ユーザーが持っている服一覧】
+${profileSnippet ? profileSnippet + "\n\n" : ""}${trendsSnippet}
+
+【ユーザーが持っている服一覧】
 ${wardrobeList || "（まだ何も登録されていません）"}
 
 このリストの中から提案してください。リストにない服は絶対に提案しないこと。
+あなたのキャラクター性は崩さず、上記のトレンドとパーソナリティを踏まえて、本人が気づいていない魅力を引き出すコーデを提案してください。
 `;
 
     const completion = await ai.chat.completions.create({
