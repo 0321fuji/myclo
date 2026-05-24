@@ -189,7 +189,13 @@ export default function CoordinatorChatPage({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage())}
+            onKeyDown={(e) => {
+              // IME変換中のEnterは無視（日本語入力の確定とぶつかるのを防ぐ）
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
             placeholder="メッセージを入力..."
             disabled={sending}
             className="flex-1 bg-stone-50 rounded-full px-4 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300 disabled:opacity-50"

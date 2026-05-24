@@ -380,7 +380,12 @@ export default function AddClothingPage() {
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addTag()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      addTag();
+                    }
+                  }}
                   placeholder="例：春夏、定番、お気に入り"
                   className="flex-1 bg-stone-50 rounded-xl px-3 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300"
                 />
