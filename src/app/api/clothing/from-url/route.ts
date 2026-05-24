@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { v2 as cloudinary } from "cloudinary";
 
+// Vercel関数のタイムアウトを延長（hobby planの最大60秒）
+// fetch + Cloudinary転送 + GPT-4o vision で合計15〜25秒かかる
+export const maxDuration = 60;
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -93,23 +97,35 @@ export async function POST(request: NextRequest) {
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "ja,en;q=0.9",
+          // 一部のサイトはこれがないとブロックする
+          "Accept-Encoding": "gzip, deflate, br",
+          "Cache-Control": "no-cache",
         },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(25000), // 25秒
+        redirect: "follow",
       });
       if (!res.ok) {
         return NextResponse.json(
-          { error: `ページの取得に失敗しました (${res.status})` },
+          {
+            error:
+              res.status === 403
+                ? "このサイトはBotアクセスをブロックしています。別のサイトのURLか、写真アップロードをお試しください"
+                : res.status === 404
+                ? "商品ページが見つかりませんでした"
+                : `ページの取得に失敗しました (${res.status})`,
+          },
           { status: 400 }
         );
       }
       html = await res.text();
     } catch (e) {
+      const isTimeout = e instanceof Error && e.name === "TimeoutError";
+      console.error("[from-url] fetch failed:", e);
       return NextResponse.json(
         {
-          error:
-            e instanceof Error && e.name === "TimeoutError"
-              ? "ページの取得がタイムアウトしました"
-              : "ページにアクセスできませんでした",
+          error: isTimeout
+            ? "ページの取得がタイムアウトしました。サイトが重いか、Botアクセスをブロックしている可能性があります"
+            : "ページにアクセスできませんでした。URLが正しいかご確認ください",
         },
         { status: 400 }
       );
