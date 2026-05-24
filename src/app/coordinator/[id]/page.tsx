@@ -22,6 +22,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   suggestedItems?: SuggestedItem[];
+  suggestedFollowups?: string[]; // AIが生成した、この返信に応じた追問候補
   worn?: boolean; // 「このコーデにする」を押したか
 }
 
@@ -109,6 +110,7 @@ export default function CoordinatorChatPage({
           role: "assistant",
           content: data.reply,
           suggestedItems: data.suggestedItems || [],
+          suggestedFollowups: data.suggestedFollowups || [],
         },
       ]);
     } catch (e) {
@@ -316,20 +318,36 @@ export default function CoordinatorChatPage({
         )}
 
       {/* Followup chips（会話中：最後のメッセージがアシスタントの返信の時のみ） */}
-      {coordinator.followups &&
-        coordinator.followups.length > 0 &&
-        messages.length > 0 &&
-        messages[messages.length - 1].role === "assistant" &&
-        messages.some((m) => m.role === "user") &&
-        !sending && (
+      {(() => {
+        if (sending) return null;
+        if (messages.length === 0) return null;
+        const last = messages[messages.length - 1];
+        if (last.role !== "assistant") return null;
+        if (!messages.some((m) => m.role === "user")) return null;
+
+        // 動的（AIが生成した）追問候補を優先。なければ静的なフォールバック。
+        const chips =
+          last.suggestedFollowups && last.suggestedFollowups.length > 0
+            ? last.suggestedFollowups
+            : coordinator.followups || [];
+
+        if (chips.length === 0) return null;
+        const isDynamic = !!(last.suggestedFollowups && last.suggestedFollowups.length > 0);
+
+        return (
           <div className="bg-stone-50 px-3 pb-2">
             <div className="flex items-center gap-1.5 mb-1.5 px-1">
               <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
                 続けて聞く
               </span>
+              {isDynamic && (
+                <span className={`text-[9px] font-bold ${coordinator.accentColor}`}>
+                  ✨ 会話に合わせて生成
+                </span>
+              )}
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-              {coordinator.followups.map((s) => (
+              {chips.map((s) => (
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
@@ -340,7 +358,8 @@ export default function CoordinatorChatPage({
               ))}
             </div>
           </div>
-        )}
+        );
+      })()}
 
       {/* Input */}
       <div className="bg-white px-3 py-3 border-t border-stone-100">

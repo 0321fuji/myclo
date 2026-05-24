@@ -105,6 +105,19 @@ ${wardrobeList || "（まだ何も登録されていません）"}
 - 雑談・質問返し・挨拶ではタグを付けない。コーデ提案する時だけ
 - 提案するアイテムは最低2点（トップス＋ボトムス）以上。同じカテゴリから複数選ばない（アクセサリーは除く）
 
+【追問候補の生成（必須）】
+回答の最後に、ユーザーが「次に聞きたくなりそうな」追問候補を3〜5個生成すること。
+形式：
+  <followups>選択肢1|選択肢2|選択肢3</followups>
+
+ルール：
+- 直前の自分の回答内容に**具体的に紐づく**選択肢にする（汎用的な「もっと攻めて」より「ジャケットを変えて」のように具体に）
+- 各選択肢は15文字以内、口語で
+- ユーザーがそのまま送信できる文章にする
+- 例：コーデ提案した直後なら「靴を革靴に変えて」「アウター追加して」「ジャケット違いで」など
+- 例：質問返ししただけなら「具体例ちょうだい」「他の選択肢も」など
+- このタグもユーザーには見えない（システムが解析してチップ表示する）
+
 あなたのキャラクター性は絶対に崩さず、上記のトレンドとパーソナリティを踏まえて、本人が気づいていない魅力を引き出すコーデを提案してください。
 `;
 
@@ -136,8 +149,22 @@ ${wardrobeList || "（まだ何も登録されていません）"}
         });
     }
 
+    // <followups>...</followups> タグを解析（動的な追問候補）
+    const followupsMatch = rawReply.match(/<followups>([^<]+)<\/followups>/);
+    let suggestedFollowups: string[] = [];
+    if (followupsMatch) {
+      suggestedFollowups = followupsMatch[1]
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 5);
+    }
+
     // ユーザーに見せる本文からはタグを除去
-    const reply = rawReply.replace(/<outfit>[^<]+<\/outfit>/g, "").trim();
+    const reply = rawReply
+      .replace(/<outfit>[^<]+<\/outfit>/g, "")
+      .replace(/<followups>[^<]+<\/followups>/g, "")
+      .trim();
 
     // クライアントが必要とする形に整形
     const suggestedItemsClient = suggestedItems.map((it) => ({
@@ -151,7 +178,11 @@ ${wardrobeList || "（まだ何も登録されていません）"}
       wornCount: it.wornCount,
     }));
 
-    return NextResponse.json({ reply, suggestedItems: suggestedItemsClient });
+    return NextResponse.json({
+      reply,
+      suggestedItems: suggestedItemsClient,
+      suggestedFollowups,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[POST /api/coordinator/chat] error:", message);
