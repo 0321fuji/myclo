@@ -6,6 +6,7 @@ import { Camera, Upload, Sparkles, ChevronLeft, Check, Link2 } from "lucide-reac
 import Image from "next/image";
 import type { Category, Silhouette, StyleType } from "@/lib/types";
 import { CATEGORY_LABELS, STYLE_LABELS, MATERIALS } from "@/lib/types";
+import ColorPaletteSelector from "@/components/ColorPaletteSelector";
 
 interface TagSuggestion {
   name: string;
@@ -21,23 +22,6 @@ interface TagSuggestion {
 
 const CATEGORIES: Category[] = ["tops", "bottoms", "outerwear", "dress", "shoes", "accessories", "bag"];
 
-const PRESET_COLORS = [
-  { name: "ホワイト", bg: "bg-white", border: "border-stone-200" },
-  { name: "ブラック", bg: "bg-stone-900", border: "border-stone-900" },
-  { name: "グレー", bg: "bg-stone-400", border: "border-stone-400" },
-  { name: "ブラウン", bg: "bg-amber-800", border: "border-amber-800" },
-  { name: "ベージュ", bg: "bg-amber-100", border: "border-amber-200" },
-  { name: "グリーン", bg: "bg-green-500", border: "border-green-500" },
-  { name: "ブルー", bg: "bg-blue-500", border: "border-blue-500" },
-  { name: "パープル", bg: "bg-purple-500", border: "border-purple-500" },
-  { name: "イエロー", bg: "bg-yellow-400", border: "border-yellow-400" },
-  { name: "ピンク", bg: "bg-pink-400", border: "border-pink-400" },
-  { name: "レッド", bg: "bg-red-500", border: "border-red-500" },
-  { name: "オレンジ", bg: "bg-orange-400", border: "border-orange-400" },
-  { name: "シルバー", bg: "bg-slate-300", border: "border-slate-300" },
-  { name: "ゴールド", bg: "bg-yellow-600", border: "border-yellow-600" },
-  { name: "その他", bg: "bg-gradient-to-br from-rose-300 via-blue-300 to-green-300", border: "border-stone-200" },
-];
 const SILHOUETTES: Silhouette[] = ["tight", "wide", "long", "short", "oversized", "regular"];
 const SILHOUETTE_LABELS: Record<Silhouette, string> = {
   tight: "タイト",
@@ -224,12 +208,6 @@ export default function AddClothingPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const toggleColor = (colorName: string) => {
-    setColors(prev =>
-      prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
-    );
   };
 
   const toggleMaterial = (m: string) => {
@@ -548,28 +526,13 @@ export default function AddClothingPage() {
 
             {/* Colors */}
             <div>
-              <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 block">
-                カラー
-              </label>
-              <div className="grid grid-cols-5 gap-2">
-                {PRESET_COLORS.map((color) => {
-                  const selected = colors.includes(color.name);
-                  return (
-                    <button
-                      key={color.name}
-                      onClick={() => toggleColor(color.name)}
-                      className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
-                        selected ? "border-rose-400 bg-rose-50" : "border-transparent bg-stone-50"
-                      }`}
-                    >
-                      <div className={`w-7 h-7 rounded-full ${color.bg} border ${color.border}`} />
-                      <span className={`text-[10px] font-medium ${selected ? "text-rose-500" : "text-stone-500"}`}>
-                        {color.name}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="flex items-baseline gap-2 mb-2">
+                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  カラー
+                </label>
+                <span className="text-[10px] text-stone-400">系統をタップ→詳細選択</span>
               </div>
+              <ColorPaletteSelector selected={colors} onChange={setColors} />
             </div>
 
             {/* Materials */}
