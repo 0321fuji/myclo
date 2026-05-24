@@ -135,6 +135,14 @@ export const STYLE_OPTIONS = [
   "スポーティ",
 ];
 
+/** 「特になし」を表すセンチネル値（配列内に含めて使う） */
+export const STYLE_NONE = "__none__";
+
+/** 配列が「特になし」状態か判定 */
+export function isNoneSelected(arr: string[]): boolean {
+  return arr.length === 1 && arr[0] === STYLE_NONE;
+}
+
 /**
  * AIに渡すユーザープロフィールのプロンプトスニペットを生成
  * 未設定の項目はスキップする
@@ -161,10 +169,14 @@ export function buildProfilePromptSnippet(profile: UserProfileData | null): stri
     lines.push(`- パーソナルカラー: ${PERSONAL_COLOR_LABELS[profile.personalColor]} → ${hint}`);
   }
 
-  if (profile.preferredStyles.length > 0) {
+  if (isNoneSelected(profile.preferredStyles)) {
+    lines.push(`- 好きなテイスト: 特になし（こだわりなし）`);
+  } else if (profile.preferredStyles.length > 0) {
     lines.push(`- 好きなテイスト: ${profile.preferredStyles.join("、")}`);
   }
-  if (profile.dislikedStyles.length > 0) {
+  if (isNoneSelected(profile.dislikedStyles)) {
+    lines.push(`- 苦手なテイスト: 特になし（何でもOK）`);
+  } else if (profile.dislikedStyles.length > 0) {
     lines.push(`- 苦手なテイスト: ${profile.dislikedStyles.join("、")}`);
   }
   if (profile.inspirations) {

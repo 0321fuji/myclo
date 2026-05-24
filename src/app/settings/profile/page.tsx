@@ -21,6 +21,8 @@ import {
   OCCUPATION_LABELS,
   SCENE_LABELS,
   STYLE_OPTIONS,
+  STYLE_NONE,
+  isNoneSelected,
   calculateCompletion,
 } from "@/lib/profile";
 
@@ -66,8 +68,20 @@ export default function ProfileSettingsPage() {
   const toggleArray = (key: "preferredStyles" | "dislikedStyles" | "scenes", value: string) => {
     setProfile((p) => {
       const arr = p[key] as string[];
-      const next = arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+      // 通常のスタイル選択時：「特になし」を外してからトグル
+      const cleaned = arr.filter((v) => v !== STYLE_NONE);
+      const next = cleaned.includes(value)
+        ? cleaned.filter((v) => v !== value)
+        : [...cleaned, value];
       return { ...p, [key]: next };
+    });
+  };
+
+  const toggleNone = (key: "preferredStyles" | "dislikedStyles") => {
+    setProfile((p) => {
+      const arr = p[key];
+      // すでに「特になし」なら解除（空配列に戻す）。そうでなければ[STYLE_NONE]に置き換える
+      return { ...p, [key]: isNoneSelected(arr) ? [] : [STYLE_NONE] };
     });
   };
 
@@ -215,6 +229,13 @@ export default function ProfileSettingsPage() {
         {/* ===== Taste ===== */}
         <Section title="好きなテイスト" hint="複数選択可">
           <div className="flex flex-wrap gap-2">
+            <Chip
+              selected={isNoneSelected(profile.preferredStyles)}
+              onClick={() => toggleNone("preferredStyles")}
+              color="rose"
+            >
+              特になし
+            </Chip>
             {STYLE_OPTIONS.map((s) => (
               <Chip
                 key={s}
@@ -230,6 +251,13 @@ export default function ProfileSettingsPage() {
 
         <Section title="苦手なテイスト" hint="複数選択可">
           <div className="flex flex-wrap gap-2">
+            <Chip
+              selected={isNoneSelected(profile.dislikedStyles)}
+              onClick={() => toggleNone("dislikedStyles")}
+              color="stone"
+            >
+              特になし
+            </Chip>
             {STYLE_OPTIONS.map((s) => (
               <Chip
                 key={s}
