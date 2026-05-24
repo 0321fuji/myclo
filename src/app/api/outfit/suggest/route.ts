@@ -39,8 +39,46 @@ function toClothingItemData(item: {
   };
 }
 
+// 提案にバリエーションを出すための"今日のテーマ"プール
+const VIBE_PROMPTS = [
+  "色のリズムを意識して、配色に遊びを入れる",
+  "素材感のコントラスト（つやとマット、軽と重）を効かせる",
+  "シルエットでメリハリを作る（タイト×ワイド、長×短など）",
+  "あえての『外し』を1点入れて、こなれ感を出す",
+  "1色を主役にして、他は引き立て役にする",
+  "ベーシック同士のシンプルな組み合わせで、抜け感を演出する",
+  "色のトーンを統一して、まとまり感を作る",
+  "差し色を1点だけ取り入れる",
+  "縦のラインを意識して、スタイルアップ効果を狙う",
+  "前回と違う雰囲気で、新鮮さを出す",
+  "コーデの主役を1点決めて、そこから組み立てる",
+  "リラックス感のある組み合わせで、力の抜けたお洒落に",
+];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 季節を気温から判定
+function getSeasonHint(maxTemp: number, minTemp: number): string {
+  const avg = (maxTemp + minTemp) / 2;
+  if (avg >= 25) return "夏（暑い）。通気性の良い素材（リネン/麻、コットン）が快適。レザーやウールは避ける。";
+  if (avg >= 18) return "春・初秋（過ごしやすい）。コットンやポリエステルが万能。";
+  if (avg >= 10) return "晩秋・初冬（肌寒い）。デニム、コーデュロイ、軽めのウールが活躍。";
+  return "冬（寒い）。ウール、レザー、厚手素材で防寒。アウターは必須。";
+}
+
 export async function POST(request: NextRequest) {
-  const { style, maxTemp, minTemp } = await request.json() as {
+  const { style, maxTemp, minTemp } = (await request.json()) as {
     style: StyleType;
     maxTemp: number;
     minTemp: number;
@@ -60,7 +98,7 @@ export async function POST(request: NextRequest) {
   const items = allItems.map(toClothingItemData);
 
   if (!process.env.OPENAI_API_KEY) {
-    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    const shuffled = shuffle(items);
     const tops = shuffled.find((i) => i.category === "tops" || i.category === "dress");
     const bottoms = shuffled.find((i) => i.category === "bottoms");
     const selected = [tops, bottoms].filter(Boolean) as ClothingItemData[];
@@ -74,37 +112,69 @@ export async function POST(request: NextRequest) {
   }
 
   const needsOuterwear = minTemp < 10;
-  const itemsText = (items as ClothingItemData[]).map((item: ClothingItemData) =>
-    `- ID:${item.id} 名前:${item.name} カテゴリ:${item.category} 色:${item.colors.join("/")} シルエット:${item.silhouette} スタイル:${item.style} 着用回数:${item.wornCount}`
-  ).join("\n");
+  const seasonHint = getSeasonHint(maxTemp, minTemp);
+  const todaysVibe = pickRandom(VIBE_PROMPTS);
+
+  // アイテム順をシャッフル → "最初のものを選ぶバイアス"を回避
+  const shuffledItems = shuffle(items);
+
+  const itemsText = shuffledItems
+    .map((item) => {
+      const matStr = item.materials.length > 0 ? `・素材:${item.materials.join("/")}` : "";
+      return `- ID:${item.id} 名前:${item.name} カテゴリ:${item.category} 色:${item.colors.join("/")} シルエット:${item.silhouette} スタイル:${item.style} 着用回数:${item.wornCount}${matStr}`;
+    })
+    .join("\n");
 
   const ai = getOpenAI()!;
   const response = await ai.chat.completions.create({
     model: "gpt-4o-mini",
+    temperature: 1.0, // 多様性を出すため明示的に上げる
+    presence_penalty: 0.6, // 同じアイテムを繰り返し選ぶのを抑制
+    frequency_penalty: 0.3,
     messages: [
       {
         role: "system",
-        content: `あなたはファッションコーディネーターです。ユーザーのクローゼットの服を組み合わせて、スタイル別コーデを提案します。
-着用回数が少ない服を優先的に使い、マンネリを防いでください。
+        content: `あなたは経験豊富なファッションコーディネーターです。ユーザーのクローゼットから、毎回新鮮で多様なコーデを提案します。
+
+【重要な原則】
+1. **多様性を最優先**：同じ服ばかり選ばない。前回と違うアプローチで組み立てる
+2. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
+3. **着用回数の少ない服を優先**：眠っている服を発掘する
+4. **必ずカテゴリのバランスを取る**：トップス＋ボトムス（またはワンピース）を必ず含める。寒い日はアウターも
+
+【避けること】
+- ありきたりな「無難なコーデ」だけを提案
+- カテゴリの偏り（全部トップス、など）
+- 季節外れの素材（夏にウール、冬にリネン）
+
 必ずJSONのみ返してください（マークダウン不要）。`,
       },
       {
         role: "user",
-        content: `今日の気温: 最高${maxTemp}℃ / 最低${minTemp}℃
-${needsOuterwear ? "アウターが必要な気温です。" : "アウターは不要かもしれません。"}
+        content: `# 今日の条件
+気温: 最高${maxTemp}℃ / 最低${minTemp}℃
+${seasonHint}
+${needsOuterwear ? "→ アウターが必要な気温です。" : "→ アウターは基本不要です。"}
 希望スタイル: ${STYLE_LABELS[style]}
 
-クローゼットの服一覧:
+# 今日のテーマ（このアプローチで考えてください）
+"${todaysVibe}"
+
+# クローゼットの服一覧（順序はランダム）
 ${itemsText}
 
+# あなたへの依頼
 上記から${STYLE_LABELS[style]}スタイルのコーデを1つ提案してください。
-トップス・ボトムス（またはワンピース）を必ず含め、${needsOuterwear ? "アウターも含めてください。" : ""}
+- トップス・ボトムス（またはワンピース）を必ず含める
+- ${needsOuterwear ? "アウターも必須" : "アウターは状況に応じて"}
+- 「今日のテーマ」を体現するような選択にする
+- 着用回数が少ない服を優先的に使う
 
 以下のJSON形式で返してください:
 {
   "itemIds": ["選んだ服のIDを配列で"],
-  "description": "コーデの説明（例：大人のモノトーンカジュアル）",
-  "reason": "この組み合わせを選んだ理由（あまり着ていない服へのひと言も）"
+  "description": "コーデの一言タイトル（10〜20文字、テーマが伝わるように）",
+  "reason": "なぜこの組み合わせかの説明（2〜3文。素材や色のロジック、テーマの反映、着回し提案を含めて）"
 }`,
       },
     ],
@@ -117,7 +187,7 @@ ${itemsText}
   try {
     const data = JSON.parse(cleaned);
     const selectedItems = (data.itemIds as string[])
-      .map((id: string) => (items as ClothingItemData[]).find((item: ClothingItemData) => item.id === id))
+      .map((id: string) => items.find((item) => item.id === id))
       .filter((item): item is ClothingItemData => item !== undefined);
 
     return NextResponse.json({
@@ -127,7 +197,7 @@ ${itemsText}
       reason: data.reason,
     } as OutfitSuggestion);
   } catch {
-    const shuffled = [...items].sort(() => Math.random() - 0.5).slice(0, 3);
+    const shuffled = shuffle(items).slice(0, 3);
     return NextResponse.json({
       items: shuffled,
       style,
