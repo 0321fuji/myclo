@@ -3,7 +3,8 @@ import OpenAI from "openai";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCoordinator } from "@/lib/coordinators";
-import { getProfileForUser, buildProfilePromptSnippet } from "@/lib/profile";
+import { buildProfilePromptSnippet } from "@/lib/profile";
+import { getProfileForUser } from "@/lib/profile-server";
 
 let openai: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {

@@ -1,5 +1,3 @@
-import { prisma } from "./prisma";
-
 export interface UserProfileData {
   gender: "male" | "female" | "other" | null;
   ageGroup: AgeGroup | null;
@@ -194,27 +192,6 @@ export function buildProfilePromptSnippet(profile: UserProfileData | null): stri
   );
 
   return lines.join("\n");
-}
-
-/**
- * サーバー側でプロフィールを取得（API routeから使用）
- */
-export async function getProfileForUser(userId: string): Promise<UserProfileData | null> {
-  const p = await prisma.userProfile.findUnique({ where: { userId } });
-  if (!p) return null;
-  return {
-    gender: p.gender as UserProfileData["gender"],
-    ageGroup: p.ageGroup as UserProfileData["ageGroup"],
-    height: p.height,
-    bodyType: p.bodyType as UserProfileData["bodyType"],
-    personalColor: p.personalColor as UserProfileData["personalColor"],
-    preferredStyles: JSON.parse(p.preferredStyles || "[]"),
-    dislikedStyles: JSON.parse(p.dislikedStyles || "[]"),
-    inspirations: p.inspirations,
-    occupation: p.occupation as UserProfileData["occupation"],
-    scenes: JSON.parse(p.scenes || "[]"),
-    avoid: p.avoid,
-  };
 }
 
 /**

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getProfileForUser, buildProfilePromptSnippet } from "@/lib/profile";
+import { buildProfilePromptSnippet } from "@/lib/profile";
+import { getProfileForUser } from "@/lib/profile-server";
 import type { ClothingItemData, StyleType, OutfitSuggestion } from "@/lib/types";
 import { STYLE_LABELS } from "@/lib/types";
 
