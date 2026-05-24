@@ -18,6 +18,8 @@ export type Material = (typeof MATERIALS)[number];
 export interface ClothingItemData {
   id: string;
   name: string;
+  brand: string | null;
+  productName: string | null;
   category: Category;
   silhouette: Silhouette | null;
   colors: string[];

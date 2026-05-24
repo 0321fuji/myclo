@@ -293,6 +293,8 @@ ${pageText.substring(0, 1000)}
 出力JSON:
 {
   "name": "アイテム名（簡潔に、例：白いオーバーサイズTシャツ）",
+  "brand": "ブランド名（例：ユニクロ / Levi's / Acne Studios / GU など。判別できなければ空文字）",
+  "productName": "公式の商品名（例：エアリズム コットン Tシャツ / 501 Original Fit。商品ページのタイトル等から推定。なければ空文字）",
   "category": "tops | bottoms | outerwear | shoes | accessories | dress | bag のいずれか",
   "silhouette": "tight | wide | long | short | oversized | regular のいずれか",
   "colors": ["ホワイト・ブラック・グレー・ブラウン・ベージュ・グリーン・ブルー・パープル・イエロー・ピンク・レッド・オレンジ・シルバー・ゴールド・その他 から1〜3個"],

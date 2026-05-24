@@ -82,6 +82,8 @@ export async function PATCH(
           lastWornAt: body.lastWornAt ? new Date(body.lastWornAt) : null,
         }),
         ...(body.name !== undefined && { name: body.name }),
+        ...(body.brand !== undefined && { brand: body.brand || null }),
+        ...(body.productName !== undefined && { productName: body.productName || null }),
         ...(body.category !== undefined && { category: body.category }),
         ...(body.silhouette !== undefined && { silhouette: body.silhouette || null }),
         ...(body.style !== undefined && { style: body.style }),

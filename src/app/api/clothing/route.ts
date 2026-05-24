@@ -8,6 +8,8 @@ function toClothingItemData(item: {
   id: string;
   userId: string;
   name: string;
+  brand: string | null;
+  productName: string | null;
   category: string;
   silhouette: string | null;
   colors: string;
@@ -65,6 +67,8 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         name: body.name,
+        brand: body.brand || null,
+        productName: body.productName || null,
         category: body.category,
         silhouette: body.silhouette || null,
         colors: JSON.stringify(body.colors || []),

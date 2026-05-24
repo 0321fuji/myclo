@@ -18,6 +18,8 @@ function getOpenAI(): OpenAI | null {
 function toClothingItemData(item: {
   id: string;
   name: string;
+  brand: string | null;
+  productName: string | null;
   category: string;
   silhouette: string | null;
   colors: string;
@@ -134,7 +136,9 @@ export async function POST(request: NextRequest) {
   const itemsText = shuffledItems
     .map((item) => {
       const matStr = item.materials.length > 0 ? `・素材:${item.materials.join("/")}` : "";
-      return `- ID:${item.id} 名前:${item.name} カテゴリ:${item.category} 色:${item.colors.join("/")} シルエット:${item.silhouette} スタイル:${item.style} 着用回数:${item.wornCount}${matStr}`;
+      const brandStr = item.brand ? `・ブランド:${item.brand}` : "";
+      const productStr = item.productName ? `（${item.productName}）` : "";
+      return `- ID:${item.id} 名前:${item.name}${productStr} カテゴリ:${item.category} 色:${item.colors.join("/")} シルエット:${item.silhouette} スタイル:${item.style} 着用回数:${item.wornCount}${matStr}${brandStr}`;
     })
     .join("\n");
 
@@ -153,9 +157,10 @@ export async function POST(request: NextRequest) {
 1. **「自分では気付かない発見」を提供する**：本人がいつも組むようなありきたりな組み合わせではなく、「その手があったか」と思わせる視点を入れる
 2. **多様性を最優先**：同じ服ばかり選ばない。前回と違うアプローチで組み立てる
 3. **トレンド × パーソナリティ × クローゼットの3軸を統合**：旬の要素を取り入れつつ、ユーザーの個性に合うものだけを選ぶ
-4. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
-5. **着用回数の少ない服を優先**：眠っている服を発掘する
-6. **カテゴリは1点ずつ**：以下の構成ルールを厳守する
+4. **ブランドのトーンを尊重する**：服にブランド情報があれば、そのブランドのアイデンティティ（例：Acne Studios=北欧ミニマル、Levi's=アメリカンクラシック、ユニクロ=ベーシック）を理解し、無理にトンマナが合わない組み合わせを避ける
+5. **季節と気温に合わせる**：素材は気温に大きく影響する（ウール=寒い時/リネン=暑い時 など）
+6. **着用回数の少ない服を優先**：眠っている服を発掘する
+7. **カテゴリは1点ずつ**：以下の構成ルールを厳守する
 
 【コーデの構成ルール（厳守）】
 - トップス: 1点（ワンピースを使う場合は0点）

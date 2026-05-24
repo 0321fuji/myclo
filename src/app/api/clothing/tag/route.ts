@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
 必ずJSONのみ返してください（マークダウン不要）:
 {
   "name": "アイテム名（例：白いオーバーサイズTシャツ）",
+  "brand": "視認できるロゴからブランド名（明確にわかる場合のみ。判別できなければ空文字）",
+  "productName": "判別できる商品名（タグ等が見えればその記載。なければ空文字）",
   "category": "tops | bottoms | outerwear | shoes | accessories | dress | bag のいずれか",
   "silhouette": "tight | wide | long | short | oversized | regular のいずれか",
   "colors": ["ホワイト・ブラック・グレー・ブラウン・ベージュ・グリーン・ブルー・パープル・イエロー・ピンク・レッド・オレンジ・シルバー・ゴールド・その他 の中から1〜3個選ぶ"],

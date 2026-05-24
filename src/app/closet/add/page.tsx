@@ -9,6 +9,8 @@ import { CATEGORY_LABELS, STYLE_LABELS, MATERIALS } from "@/lib/types";
 
 interface TagSuggestion {
   name: string;
+  brand?: string;
+  productName?: string;
   category: Category;
   silhouette: Silhouette;
   colors: string[];
@@ -70,6 +72,8 @@ export default function AddClothingPage() {
   const [swappingImage, setSwappingImage] = useState(false);
 
   const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [productName, setProductName] = useState("");
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
   const [colors, setColors] = useState<string[]>([]);
@@ -106,6 +110,8 @@ export default function AddClothingPage() {
       });
       const suggestion: TagSuggestion = await tagRes.json();
       setName(suggestion.name || "");
+      setBrand(suggestion.brand || "");
+      setProductName(suggestion.productName || "");
       setCategory(suggestion.category || "tops");
       setSilhouette(suggestion.silhouette || "regular");
       setColors(suggestion.colors || []);
@@ -144,6 +150,8 @@ export default function AddClothingPage() {
       setImageCandidates(data.imageCandidates || []);
       setSelectedCandidateIdx(0);
       setName(data.name || "");
+      setBrand(data.brand || "");
+      setProductName(data.productName || "");
       setCategory(data.category || "tops");
       setSilhouette(data.silhouette || "regular");
       setColors(data.colors || []);
@@ -193,6 +201,8 @@ export default function AddClothingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          brand: brand || null,
+          productName: productName || null,
           category,
           silhouette,
           colors,
@@ -434,6 +444,40 @@ export default function AddClothingPage() {
                 placeholder="例：白いオーバーサイズTシャツ"
                 className="w-full bg-stone-50 rounded-xl px-4 py-3 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300"
               />
+            </div>
+
+            {/* Brand & Product name (optional) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                    ブランド
+                  </label>
+                  <span className="text-[10px] text-stone-400">任意</span>
+                </div>
+                <input
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="例：ユニクロ"
+                  className="w-full bg-stone-50 rounded-xl px-3 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300"
+                />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                    商品名
+                  </label>
+                  <span className="text-[10px] text-stone-400">任意</span>
+                </div>
+                <input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="例：エアリズム コットン T"
+                  className="w-full bg-stone-50 rounded-xl px-3 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300"
+                />
+              </div>
             </div>
 
             {/* Category */}

@@ -11,6 +11,8 @@ model ClothingItem {
   id                String    @id @default(cuid())
   userId            String
   name              String
+  brand             String?
+  productName       String?
   category          String
   silhouette        String?
   colors            String

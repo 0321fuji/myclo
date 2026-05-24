@@ -66,6 +66,8 @@ export default function ClothingDetailPage({
 
   // 編集中のフィールド
   const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [productName, setProductName] = useState("");
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
   const [colors, setColors] = useState<string[]>([]);
@@ -83,6 +85,8 @@ export default function ClothingDetailPage({
         const data: ClothingItemData = await res.json();
         setItem(data);
         setName(data.name);
+        setBrand(data.brand || "");
+        setProductName(data.productName || "");
         setCategory(data.category);
         setSilhouette(data.silhouette || "regular");
         setColors(data.colors);
@@ -139,7 +143,7 @@ export default function ClothingDetailPage({
       const res = await fetch(`/api/clothing/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, category, silhouette, style, colors, materials, tags }),
+        body: JSON.stringify({ name, brand: brand || null, productName: productName || null, category, silhouette, style, colors, materials, tags }),
       });
       if (!res.ok) throw new Error("保存に失敗");
       const updated = await res.json();
@@ -323,6 +327,22 @@ export default function ClothingDetailPage({
               </p>
               <p className="text-stone-800">{item.name}</p>
             </div>
+            {(item.brand || item.productName) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
+                    ブランド
+                  </p>
+                  <p className="text-sm text-stone-700">{item.brand || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
+                    商品名
+                  </p>
+                  <p className="text-sm text-stone-700">{item.productName || "—"}</p>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
@@ -413,6 +433,38 @@ export default function ClothingDetailPage({
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-stone-50 rounded-xl px-4 py-3 text-sm text-stone-800 border border-stone-100 focus:outline-none focus:border-rose-300"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                    ブランド
+                  </label>
+                  <span className="text-[10px] text-stone-400">任意</span>
+                </div>
+                <input
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="例：ユニクロ"
+                  className="w-full bg-stone-50 rounded-xl px-3 py-2.5 text-sm border border-stone-100 focus:outline-none focus:border-rose-300"
+                />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                    商品名
+                  </label>
+                  <span className="text-[10px] text-stone-400">任意</span>
+                </div>
+                <input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="例：エアリズム T"
+                  className="w-full bg-stone-50 rounded-xl px-3 py-2.5 text-sm border border-stone-100 focus:outline-none focus:border-rose-300"
+                />
+              </div>
             </div>
 
             <div>

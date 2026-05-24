@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
         const colors = JSON.parse(it.colors) as string[];
         const materials = JSON.parse(it.materials || "[]") as string[];
         const matStr = materials.length > 0 ? `・素材:${materials.join("/")}` : "";
-        return `- ${it.name}（${it.category}・${it.style}・${colors.join("/")}${it.silhouette ? "・" + it.silhouette : ""}${matStr}）`;
+        const brandStr = it.brand ? `・ブランド:${it.brand}` : "";
+        const productStr = it.productName ? `（${it.productName}）` : "";
+        return `- ${it.name}${productStr}（${it.category}・${it.style}・${colors.join("/")}${it.silhouette ? "・" + it.silhouette : ""}${matStr}${brandStr}）`;
       })
       .join("\n");
 
