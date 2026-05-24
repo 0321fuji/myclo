@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Key, Check, Info } from "lucide-react";
+import { MapPin, Key, Check, Info, User, ChevronRight, Sparkles } from "lucide-react";
+import Link from "next/link";
+import type { UserProfileData } from "@/lib/profile";
+import { calculateCompletion } from "@/lib/profile";
 
 const PRESET_LOCATIONS = [
   { name: "東京", lat: "35.6762", lon: "139.6503" },
@@ -18,6 +21,7 @@ export default function SettingsPage() {
   const [selectedCity, setSelectedCity] = useState("東京");
   const [apiKey, setApiKey] = useState("");
   const [saved, setSaved] = useState(false);
+  const [profile, setProfile] = useState<UserProfileData | null>(null);
 
   useEffect(() => {
     const savedLocation = localStorage.getItem("location");
@@ -28,7 +32,15 @@ export default function SettingsPage() {
     }
     const savedKey = localStorage.getItem("openai_key");
     if (savedKey) setApiKey(savedKey);
+
+    // プロフィール完成度の取得
+    fetch("/api/profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => setProfile(data))
+      .catch(() => {});
   }, []);
+
+  const profileCompletion = calculateCompletion(profile);
 
   const handleSave = () => {
     const city = PRESET_LOCATIONS.find((c) => c.name === selectedCity);
@@ -51,6 +63,45 @@ export default function SettingsPage() {
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Profile */}
+        <Link
+          href="/settings/profile"
+          className="block bg-white rounded-2xl p-5 shadow-sm active:scale-[0.98] transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-rose-100 to-amber-100 rounded-xl flex items-center justify-center">
+              <User size={18} className="text-rose-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-stone-800">あなたのプロフィール</p>
+                {profileCompletion < 50 && (
+                  <span className="text-[9px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded-full font-bold">
+                    NEW
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Sparkles size={11} className="text-rose-400" />
+                <p className="text-[11px] text-stone-500">
+                  {profileCompletion === 0
+                    ? "設定するとAI提案が一気にパーソナル化"
+                    : `完成度 ${profileCompletion}% - 提案精度が向上します`}
+                </p>
+              </div>
+              {profileCompletion > 0 && (
+                <div className="mt-2 h-1 bg-stone-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-rose-400 to-amber-400"
+                    style={{ width: `${profileCompletion}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            <ChevronRight size={18} className="text-stone-300 flex-none" />
+          </div>
+        </Link>
+
         {/* Location */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">

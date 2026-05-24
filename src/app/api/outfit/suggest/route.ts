@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { getProfileForUser, buildProfilePromptSnippet } from "@/lib/profile";
 import type { ClothingItemData, StyleType, OutfitSuggestion } from "@/lib/types";
 import { STYLE_LABELS } from "@/lib/types";
 
@@ -78,13 +80,21 @@ function getSeasonHint(maxTemp: number, minTemp: number): string {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
   const { style, maxTemp, minTemp } = (await request.json()) as {
     style: StyleType;
     maxTemp: number;
     minTemp: number;
   };
 
+  // ユーザープロフィールを取得
+  const profile = session?.user?.id
+    ? await getProfileForUser(session.user.id)
+    : null;
+  const profileSnippet = buildProfilePromptSnippet(profile);
+
   const allItems = await prisma.clothingItem.findMany({
+    where: session?.user?.id ? { userId: session.user.id } : undefined,
     orderBy: { wornCount: "asc" },
   });
 
@@ -162,7 +172,7 @@ export async function POST(request: NextRequest) {
       },
       {
         role: "user",
-        content: `# 今日の条件
+        content: `${profileSnippet ? profileSnippet + "\n\n" : ""}# 今日の条件
 気温: 最高${maxTemp}℃ / 最低${minTemp}℃
 ${seasonHint}
 ${needsOuterwear ? "→ アウターが必要な気温です。" : "→ アウターは基本不要です。"}

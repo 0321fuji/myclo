@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCoordinator } from "@/lib/coordinators";
+import { getProfileForUser, buildProfilePromptSnippet } from "@/lib/profile";
 
 let openai: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {
@@ -56,9 +57,13 @@ export async function POST(request: NextRequest) {
       })
       .join("\n");
 
+    // ユーザープロフィールを取得
+    const profile = await getProfileForUser(session.user.id);
+    const profileSnippet = buildProfilePromptSnippet(profile);
+
     const systemPrompt = `${coordinator.systemPrompt}
 
-【ユーザーが持っている服一覧】
+${profileSnippet ? profileSnippet + "\n\n" : ""}【ユーザーが持っている服一覧】
 ${wardrobeList || "（まだ何も登録されていません）"}
 
 このリストの中から提案してください。リストにない服は絶対に提案しないこと。

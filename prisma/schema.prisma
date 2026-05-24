@@ -27,6 +27,24 @@ model ClothingItem {
   outfitItems OutfitItem[]
 }
 
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  gender          String?  // "male" | "female" | "other"
+  ageGroup        String?  // "10s" | "20s_early" | "20s_late" | "30s" | "40s" | "50s+"
+  height          Int?     // cm
+  bodyType        String?  // "straight" | "wave" | "natural" | "unknown"
+  personalColor   String?  // "spring" | "summer" | "autumn" | "winter" | "unknown"
+  preferredStyles String   @default("[]")  // JSON array
+  dislikedStyles  String   @default("[]")  // JSON array
+  inspirations    String?  // 憧れのブランド・人 自由記述
+  occupation      String?  // "office" | "creative" | "student" | "freelance" | "other"
+  scenes          String   @default("[]")  // ["office","date","casual","formal","sport"]
+  avoid           String?  // 避けたいこと 自由記述
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model Outfit {
   id          String    @id @default(cuid())
   style       String
