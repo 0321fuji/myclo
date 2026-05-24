@@ -13,11 +13,13 @@ import type { KnowledgeModule } from "./types";
 import { WIDE_PANTS } from "./techniques/wide-pants";
 import { AUTUMN_WEEK } from "./seasonal/autumn-week";
 import { BROWN_AXIS } from "./color/brown-axis";
+import { NAVY_AXIS } from "./color/navy-axis";
 
 export const ALL_KNOWLEDGE_MODULES: KnowledgeModule[] = [
   WIDE_PANTS,
   AUTUMN_WEEK,
   BROWN_AXIS,
+  NAVY_AXIS,
   // 👇 ここに追加していく
 ];
 
