@@ -19,7 +19,7 @@ function toClothingItemData(item: {
   colors: string;
   tags: string;
   style: string;
-  imageUrl: string;
+  imageUrl: string | null;
   imageBgRemovedUrl: string | null;
   wornCount: number;
   lastWornAt: Date | null;
