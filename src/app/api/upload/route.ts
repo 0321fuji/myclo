@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -14,14 +18,15 @@ export async function POST(request: NextRequest) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadDir, { recursive: true });
+  const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: "myclo", resource_type: "image" },
+      (error, result) => {
+        if (error || !result) reject(error);
+        else resolve(result as { secure_url: string });
+      }
+    ).end(buffer);
+  });
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const filename = `${uuidv4()}.${ext}`;
-  const filepath = path.join(uploadDir, filename);
-
-  await writeFile(filepath, buffer);
-
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: result.secure_url });
 }
