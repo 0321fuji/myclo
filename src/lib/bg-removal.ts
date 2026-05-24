@@ -25,7 +25,7 @@ export async function removeBackgroundAndUpload(imageUrl: string): Promise<strin
   // 2. Geminiで背景削除
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image-preview",
+    model: "gemini-2.5-flash-image",
     contents: [
       {
         role: "user",
