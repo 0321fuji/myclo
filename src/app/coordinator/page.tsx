@@ -14,7 +14,7 @@ export default function CoordinatorListPage() {
           <h1 className="text-lg font-bold text-stone-800">コーディネーターに相談</h1>
         </div>
         <p className="text-xs text-stone-500">
-          3人の個性派スタイリストが、あなたの服でコーデを提案します
+          4人の個性派スタイリストが、あなたの服でコーデを提案します
         </p>
       </div>
 
@@ -35,14 +35,18 @@ export default function CoordinatorListPage() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-0.5">
+                  {c.category}
+                </div>
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <h2 className="font-bold text-stone-800">{c.name}</h2>
-                  <span className="text-xs text-stone-400">{c.age}歳</span>
+                  <span className="text-[10px] text-stone-400 tracking-wider">
+                    {c.nameEn}・{c.age}
+                  </span>
                 </div>
-                <p className={`text-xs font-medium ${c.accentColor} mb-1`}>
+                <p className={`text-xs font-medium ${c.accentColor} line-clamp-1`}>
                   {c.tagline}
                 </p>
-                <p className="text-xs text-stone-500 line-clamp-2">{c.specialty}</p>
               </div>
 
               <ChevronRight size={20} className="text-stone-300 flex-shrink-0" />

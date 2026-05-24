@@ -37,14 +37,8 @@ export default function CoordinatorChatPage({
         // ignore
       }
     } else {
-      // 初回挨拶を生成
-      const greetings: Record<string, string> = {
-        aya: "やっほー！アヤだよ〜💕 今日はどんなコーデにする？気分とか予定教えて〜！",
-        ken: "こんにちは、ケンです。今日はどのような場面のコーデをお考えですか？お気軽にどうぞ。",
-        rose: "あら、いらっしゃい。マダム・ローズですわ🌹 本日はどんな装いをお探しでしょう？お話聞かせてくださいな。",
-      };
-      const greet = greetings[coordinator.id] || "こんにちは！";
-      setMessages([{ role: "assistant", content: greet }]);
+      // キャラ定義の挨拶を初回メッセージに
+      setMessages([{ role: "assistant", content: coordinator.greeting }]);
     }
   }, [coordinator]);
 
