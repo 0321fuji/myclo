@@ -18,7 +18,7 @@ AIパーソナルスタイリストアプリ。Googleログイン認証済みの
 | Styling | Tailwind CSS v4 |
 | Database | PostgreSQL (Supabase) via Prisma v7 |
 | Auth | NextAuth.js v5 (beta) + Google OAuth |
-| AI | OpenAI GPT-4o / GPT-4o-mini |
+| AI | OpenAI GPT-4o（タグ付け） / Gemini 2.5 Flash Image（背景削除） |
 | Image Storage | Cloudinary |
 | Deploy | Vercel |
 
@@ -82,7 +82,8 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 `.env` はGitに含まれない。Vercelに以下が設定済み：
 
 - `DATABASE_URL` — Supabase PostgreSQL接続文字列
-- `OPENAI_API_KEY` — OpenAI APIキー
+- `OPENAI_API_KEY` — OpenAI APIキー（タグ付け用）
+- `GEMINI_API_KEY` — Google Gemini APIキー（背景削除用）
 - `AUTH_SECRET` — NextAuth署名キー
 - `AUTH_GOOGLE_ID` — Google OAuthクライアントID
 - `AUTH_GOOGLE_SECRET` — Google OAuthシークレット
@@ -100,6 +101,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 | PATCH | `/api/clothing/[id]` | 服を更新（着用回数など） |
 | DELETE | `/api/clothing/[id]` | 服を削除 |
 | POST | `/api/clothing/tag` | GPT-4oで画像自動タグ付け |
+| POST | `/api/clothing/remove-bg` | Gemini 2.5 Flash Imageで背景削除 |
 | POST | `/api/upload` | Cloudinaryに画像アップロード |
 | POST | `/api/outfit/suggest` | AIコーデ提案 |
 | GET | `/api/weather` | Open-Meteo天気取得 |
