@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Filter, ImageOff } from "lucide-react";
+import { Plus, Trash2, Filter, ImageOff, LayoutGrid, List, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ClothingItemData, Category } from "@/lib/types";
@@ -18,11 +18,24 @@ const CATEGORIES: (Category | "all")[] = [
   "bag",
 ];
 
+type ViewMode = "grid" | "list";
+
 export default function ClosetPage() {
   const [items, setItems] = useState<ClothingItemData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  // 表示モードをlocalStorageで永続化
+  useEffect(() => {
+    const saved = localStorage.getItem("closet-view-mode");
+    if (saved === "grid" || saved === "list") setViewMode(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("closet-view-mode", viewMode);
+  }, [viewMode]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -75,32 +88,55 @@ export default function ClosetPage() {
           </Link>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex-none flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                activeCategory === cat
-                  ? "bg-stone-800 text-white"
-                  : "bg-stone-50 text-stone-500"
-              }`}
-            >
-              {cat === "all" ? "すべて" : CATEGORY_LABELS[cat]}
-              <span
-                className={`text-[10px] ${
-                  activeCategory === cat ? "text-stone-300" : "text-stone-400"
+        {/* Category Filter + View toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`flex-none flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeCategory === cat
+                    ? "bg-stone-800 text-white"
+                    : "bg-stone-50 text-stone-500"
                 }`}
               >
-                {categoryCount(cat)}
-              </span>
+                {cat === "all" ? "すべて" : CATEGORY_LABELS[cat]}
+                <span
+                  className={`text-[10px] ${
+                    activeCategory === cat ? "text-stone-300" : "text-stone-400"
+                  }`}
+                >
+                  {categoryCount(cat)}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* View Toggle */}
+          <div className="flex-none flex bg-stone-100 rounded-full p-0.5">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+                viewMode === "grid" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
+              }`}
+              aria-label="グリッド表示"
+            >
+              <LayoutGrid size={14} />
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode("list")}
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+                viewMode === "list" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
+              }`}
+              aria-label="リスト表示"
+            >
+              <List size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Items Grid */}
+      {/* Items */}
       <div className="p-4">
         {loading ? (
           <div className="grid grid-cols-2 gap-3">
@@ -124,89 +160,161 @@ export default function ClosetPage() {
               最初の服を追加する
             </Link>
           </div>
-        ) : (
+        ) : viewMode === "grid" ? (
+          // ===== GRID VIEW =====
           <div className="grid grid-cols-2 gap-3">
             {filtered.map((item) => {
               const imageSrc = item.imageBgRemovedUrl || item.imageUrl;
               return (
-              <Link href={`/closet/${item.id}`} key={item.id} className="relative group block">
-                <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
-                  {imageSrc ? (
-                    <Image
-                      src={imageSrc}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 448px) 50vw, 224px"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-stone-100 to-stone-50">
-                      <ImageOff size={28} className="text-stone-300" />
-                      <span className="text-[10px] text-stone-400 font-medium px-2 text-center">
-                        写真未登録
-                      </span>
+                <Link href={`/closet/${item.id}`} key={item.id} className="relative group block">
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 448px) 50vw, 224px"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-stone-100 to-stone-50">
+                        <ImageOff size={28} className="text-stone-300" />
+                        <span className="text-[10px] text-stone-400 font-medium px-2 text-center">
+                          写真未登録
+                        </span>
+                      </div>
+                    )}
+                    {imageSrc && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    )}
+                    <div className={`absolute bottom-0 left-0 right-0 px-3 py-2 ${imageSrc ? "" : "bg-white/60 backdrop-blur-sm"}`}>
+                      <p className={`text-xs font-semibold truncate ${imageSrc ? "text-white" : "text-stone-700"}`}>{item.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
+                          {CATEGORY_LABELS[item.category]}
+                        </span>
+                        <span className={`text-[10px] ${imageSrc ? "text-white/50" : "text-stone-400"}`}>·</span>
+                        <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
+                          {STYLE_LABELS[item.style]}
+                        </span>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Overlay (only if image) */}
-                  {imageSrc && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  )}
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      {item.colors.slice(0, 3).map((color, i) => (
+                        <span
+                          key={i}
+                          className="text-[9px] bg-white/80 backdrop-blur-sm text-stone-600 px-1.5 py-0.5 rounded-full"
+                        >
+                          {color}
+                        </span>
+                      ))}
+                    </div>
+                    {item.wornCount > 0 && (
+                      <div className="absolute top-2 right-2 bg-rose-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                        ×{item.wornCount}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                    className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium shadow-md transition-all ${
+                      deleteConfirm === item.id
+                        ? "bg-red-500 text-white scale-110"
+                        : "bg-white text-stone-400 border border-stone-100"
+                    }`}
+                  >
+                    {deleteConfirm === item.id ? (
+                      <span className="text-[9px] font-bold">削除</span>
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                  </button>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          // ===== LIST VIEW =====
+          <div className="space-y-2">
+            {filtered.map((item) => {
+              const imageSrc = item.imageBgRemovedUrl || item.imageUrl;
+              return (
+                <Link
+                  href={`/closet/${item.id}`}
+                  key={item.id}
+                  className="flex items-center gap-3 bg-white rounded-2xl p-2.5 border border-stone-100 active:scale-[0.98] transition-all"
+                >
+                  {/* Thumbnail */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-50 relative flex-none">
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-50">
+                        <ImageOff size={18} className="text-stone-300" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Info */}
-                  <div className={`absolute bottom-0 left-0 right-0 px-3 py-2 ${imageSrc ? "" : "bg-white/60 backdrop-blur-sm"}`}>
-                    <p className={`text-xs font-semibold truncate ${imageSrc ? "text-white" : "text-stone-700"}`}>{item.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-stone-800 truncate">{item.name}</p>
+                      {item.wornCount > 0 && (
+                        <span className="flex-none bg-rose-50 text-rose-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                          ×{item.wornCount}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
+                      <span className="text-[11px] text-stone-500">
                         {CATEGORY_LABELS[item.category]}
                       </span>
-                      <span className={`text-[10px] ${imageSrc ? "text-white/50" : "text-stone-400"}`}>·</span>
-                      <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
+                      <span className="text-[10px] text-stone-300">·</span>
+                      <span className="text-[11px] text-stone-500">
                         {STYLE_LABELS[item.style]}
                       </span>
+                      {item.colors.length > 0 && (
+                        <>
+                          <span className="text-[10px] text-stone-300">·</span>
+                          <span className="text-[11px] text-stone-500 truncate">
+                            {item.colors.slice(0, 2).join("・")}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Colors */}
-                  <div className="absolute top-2 left-2 flex gap-1">
-                    {item.colors.slice(0, 3).map((color, i) => (
-                      <span
-                        key={i}
-                        className="text-[9px] bg-white/80 backdrop-blur-sm text-stone-600 px-1.5 py-0.5 rounded-full"
-                      >
-                        {color}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Worn count badge */}
-                  {item.wornCount > 0 && (
-                    <div className="absolute top-2 right-2 bg-rose-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                      ×{item.wornCount}
-                    </div>
-                  )}
-                </div>
-
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDelete(item.id);
-                  }}
-                  className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium shadow-md transition-all ${
-                    deleteConfirm === item.id
-                      ? "bg-red-500 text-white scale-110"
-                      : "bg-white text-stone-400 border border-stone-100"
-                  }`}
-                >
-                  {deleteConfirm === item.id ? (
-                    <span className="text-[9px] font-bold">削除</span>
-                  ) : (
-                    <Trash2 size={12} />
-                  )}
-                </button>
-              </Link>
+                  {/* Delete + Chevron */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-none transition-all ${
+                      deleteConfirm === item.id
+                        ? "bg-red-500 text-white"
+                        : "bg-stone-50 text-stone-400"
+                    }`}
+                  >
+                    {deleteConfirm === item.id ? (
+                      <span className="text-[9px] font-bold">削除</span>
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                  </button>
+                  <ChevronRight size={16} className="text-stone-300 flex-none" />
+                </Link>
               );
             })}
           </div>
