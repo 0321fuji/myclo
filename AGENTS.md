@@ -102,6 +102,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 | DELETE | `/api/clothing/[id]` | 服を削除 |
 | POST | `/api/clothing/tag` | GPT-4oで画像自動タグ付け |
 | POST | `/api/clothing/remove-bg` | Gemini 2.5 Flash Imageで背景削除 |
+| POST | `/api/coordinator/chat` | コーディネーター（3キャラ）とチャット |
 | POST | `/api/upload` | Cloudinaryに画像アップロード |
 | POST | `/api/outfit/suggest` | AIコーデ提案 |
 | GET | `/api/weather` | Open-Meteo天気取得 |

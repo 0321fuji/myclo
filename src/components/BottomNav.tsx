@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Shirt, Settings } from "lucide-react";
+import { Home, Shirt, MessageCircleHeart, Settings } from "lucide-react";
 
 const navItems = [
   { href: "/", icon: Home, label: "ホーム" },
   { href: "/closet", icon: Shirt, label: "クローゼット" },
+  { href: "/coordinator", icon: MessageCircleHeart, label: "相談" },
   { href: "/settings", icon: Settings, label: "設定" },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
+
+  // チャット詳細画面とログイン画面ではナビを非表示
+  const hideOn = ["/login"];
+  if (hideOn.includes(pathname)) return null;
+  if (pathname.startsWith("/coordinator/") && pathname !== "/coordinator") return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 z-50 max-w-md mx-auto">
