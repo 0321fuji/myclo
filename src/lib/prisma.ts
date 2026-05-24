@@ -1,13 +1,14 @@
-import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
 function createPrismaClient() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL!,
+  // Supabase requires SSL from external hosts (Vercel)
+  // Pass ssl config directly to PrismaPg as a connection config object
+  const connectionString = process.env.DATABASE_URL!;
+  const adapter = new PrismaPg({
+    connectionString,
     ssl: { rejectUnauthorized: false },
   });
-  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 

@@ -31,39 +31,51 @@ function toClothingItemData(item: {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const items = await prisma.clothingItem.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(items.map(toClothingItemData));
+    const items = await prisma.clothingItem.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(items.map(toClothingItemData));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[GET /api/clothing] error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const item = await prisma.clothingItem.create({
+      data: {
+        userId: session.user.id,
+        name: body.name,
+        category: body.category,
+        silhouette: body.silhouette || null,
+        colors: JSON.stringify(body.colors || []),
+        tags: JSON.stringify(body.tags || []),
+        style: body.style || "casual",
+        imageUrl: body.imageUrl,
+        imageBgRemovedUrl: body.imageBgRemovedUrl || null,
+      },
+    });
+
+    return NextResponse.json(toClothingItemData(item), { status: 201 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[POST /api/clothing] error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const body = await request.json();
-
-  const item = await prisma.clothingItem.create({
-    data: {
-      userId: session.user.id,
-      name: body.name,
-      category: body.category,
-      silhouette: body.silhouette || null,
-      colors: JSON.stringify(body.colors || []),
-      tags: JSON.stringify(body.tags || []),
-      style: body.style || "casual",
-      imageUrl: body.imageUrl,
-      imageBgRemovedUrl: body.imageBgRemovedUrl || null,
-    },
-  });
-
-  return NextResponse.json(toClothingItemData(item), { status: 201 });
 }
