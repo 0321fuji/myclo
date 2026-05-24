@@ -113,7 +113,7 @@ export default function AddClothingPage() {
   }, []);
 
   const handleSave = async () => {
-    if (!uploadedUrl || !name) return;
+    if (!name.trim()) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -127,7 +127,7 @@ export default function AddClothingPage() {
           colors,
           tags,
           style,
-          imageUrl: uploadedUrl,
+          imageUrl: uploadedUrl || null,
         }),
       });
       if (!res.ok) {
@@ -172,8 +172,14 @@ export default function AddClothingPage() {
       </div>
 
       <div className="p-5 space-y-5">
-        {/* Image Upload */}
+        {/* Image Upload (Optional) */}
         <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              写真（任意）
+            </label>
+            <span className="text-[10px] text-stone-400">後から追加もできます</span>
+          </div>
           {imagePreview ? (
             <div className="relative">
               <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
@@ -211,20 +217,20 @@ export default function AddClothingPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => cameraInputRef.current?.click()}
-                className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 bg-stone-50"
+                className="h-20 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-1 bg-stone-50"
               >
-                <Camera size={28} className="text-stone-300" />
-                <span className="text-xs text-stone-400 font-medium">カメラで撮影</span>
+                <Camera size={20} className="text-stone-300" />
+                <span className="text-[11px] text-stone-400 font-medium">カメラで撮影</span>
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 bg-stone-50"
+                className="h-20 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-1 bg-stone-50"
               >
-                <Upload size={28} className="text-stone-300" />
-                <span className="text-xs text-stone-400 font-medium">写真を選択</span>
+                <Upload size={20} className="text-stone-300" />
+                <span className="text-[11px] text-stone-400 font-medium">写真を選択</span>
               </button>
             </div>
           )}
@@ -246,8 +252,8 @@ export default function AddClothingPage() {
           />
         </div>
 
-        {imageFile && (
-          <>
+        {/* Form is always visible (image is optional) */}
+        <>
             {/* Name */}
             <div>
               <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 block">
@@ -408,11 +414,11 @@ export default function AddClothingPage() {
             {/* Save Button */}
             <button
               onClick={handleSave}
-              disabled={!name || !uploadedUrl || saving || saved || analyzing || uploading}
+              disabled={!name.trim() || saving || saved || analyzing || uploading}
               className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base transition-all ${
                 saved
                   ? "bg-emerald-400 text-white"
-                  : !name || saving || analyzing || uploading
+                  : !name.trim() || saving || analyzing || uploading
                   ? "bg-stone-100 text-stone-300"
                   : "bg-rose-400 text-white shadow-md"
               }`}
@@ -429,7 +435,6 @@ export default function AddClothingPage() {
               )}
             </button>
           </>
-        )}
       </div>
     </div>
   );

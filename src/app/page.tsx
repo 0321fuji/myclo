@@ -208,23 +208,36 @@ export default function HomePage() {
                   outfit.items.length <= 2 ? "grid-cols-2" : "grid-cols-3"
                 }`}
               >
-                {outfit.items.map((item) => (
+                {outfit.items.map((item) => {
+                  const src = item.imageBgRemovedUrl || item.imageUrl;
+                  return (
                   <div
                     key={item.id}
                     className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative"
                   >
-                    <Image
-                      src={item.imageBgRemovedUrl || item.imageUrl}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 448px) 50vw, 224px"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1.5">
-                      <p className="text-white text-[10px] font-medium truncate">{item.name}</p>
-                    </div>
+                    {src ? (
+                      <Image
+                        src={src}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 448px) 50vw, 224px"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-50">
+                        <span className="text-[10px] text-stone-400 px-2 text-center font-medium">
+                          {item.name}
+                        </span>
+                      </div>
+                    )}
+                    {src && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1.5">
+                        <p className="text-white text-[10px] font-medium truncate">{item.name}</p>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

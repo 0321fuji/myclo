@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Filter } from "lucide-react";
+import { Plus, Trash2, Filter, ImageOff } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ClothingItemData, Category } from "@/lib/types";
@@ -126,29 +126,42 @@ export default function ClosetPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filtered.map((item) => (
-              <div key={item.id} className="relative group">
+            {filtered.map((item) => {
+              const imageSrc = item.imageBgRemovedUrl || item.imageUrl;
+              return (
+              <Link href={`/closet/${item.id}`} key={item.id} className="relative group block">
                 <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
-                  <Image
-                    src={item.imageBgRemovedUrl || item.imageUrl}
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 448px) 50vw, 224px"
-                  />
+                  {imageSrc ? (
+                    <Image
+                      src={imageSrc}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 448px) 50vw, 224px"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-stone-100 to-stone-50">
+                      <ImageOff size={28} className="text-stone-300" />
+                      <span className="text-[10px] text-stone-400 font-medium px-2 text-center">
+                        写真未登録
+                      </span>
+                    </div>
+                  )}
 
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  {/* Overlay (only if image) */}
+                  {imageSrc && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  )}
 
                   {/* Info */}
-                  <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
-                    <p className="text-white text-xs font-semibold truncate">{item.name}</p>
+                  <div className={`absolute bottom-0 left-0 right-0 px-3 py-2 ${imageSrc ? "" : "bg-white/60 backdrop-blur-sm"}`}>
+                    <p className={`text-xs font-semibold truncate ${imageSrc ? "text-white" : "text-stone-700"}`}>{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] text-white/70">
+                      <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
                         {CATEGORY_LABELS[item.category]}
                       </span>
-                      <span className="text-[10px] text-white/50">·</span>
-                      <span className="text-[10px] text-white/70">
+                      <span className={`text-[10px] ${imageSrc ? "text-white/50" : "text-stone-400"}`}>·</span>
+                      <span className={`text-[10px] ${imageSrc ? "text-white/70" : "text-stone-500"}`}>
                         {STYLE_LABELS[item.style]}
                       </span>
                     </div>
@@ -176,7 +189,11 @@ export default function ClosetPage() {
 
                 {/* Delete Button */}
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(item.id);
+                  }}
                   className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium shadow-md transition-all ${
                     deleteConfirm === item.id
                       ? "bg-red-500 text-white scale-110"
@@ -189,8 +206,9 @@ export default function ClosetPage() {
                     <Trash2 size={12} />
                   )}
                 </button>
-              </div>
-            ))}
+              </Link>
+              );
+            })}
           </div>
         )}
       </div>

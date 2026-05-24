@@ -13,7 +13,7 @@ function toClothingItemData(item: {
   colors: string;
   tags: string;
   style: string;
-  imageUrl: string;
+  imageUrl: string | null;
   imageBgRemovedUrl: string | null;
   wornCount: number;
   lastWornAt: Date | null;
@@ -68,25 +68,26 @@ export async function POST(request: NextRequest) {
         colors: JSON.stringify(body.colors || []),
         tags: JSON.stringify(body.tags || []),
         style: body.style || "casual",
-        imageUrl: body.imageUrl,
-        imageBgRemovedUrl: null, // will be filled by background task
+        imageUrl: body.imageUrl || null,
+        imageBgRemovedUrl: null,
       },
     });
 
-    // 背景削除はレスポンス送信後にバックグラウンドで実行
-    // ユーザーは待たずにクローゼットへ戻れる
-    after(async () => {
-      try {
-        const bgRemovedUrl = await removeBackgroundAndUpload(body.imageUrl);
-        await prisma.clothingItem.update({
-          where: { id: item.id },
-          data: { imageBgRemovedUrl: bgRemovedUrl },
-        });
-        console.log(`[bg-removal] success for item ${item.id}`);
-      } catch (err) {
-        console.error(`[bg-removal] failed for item ${item.id}:`, err);
-      }
-    });
+    // 画像がある場合のみ背景削除をバックグラウンド実行
+    if (body.imageUrl) {
+      after(async () => {
+        try {
+          const bgRemovedUrl = await removeBackgroundAndUpload(body.imageUrl);
+          await prisma.clothingItem.update({
+            where: { id: item.id },
+            data: { imageBgRemovedUrl: bgRemovedUrl },
+          });
+          console.log(`[bg-removal] success for item ${item.id}`);
+        } catch (err) {
+          console.error(`[bg-removal] failed for item ${item.id}:`, err);
+        }
+      });
+    }
 
     return NextResponse.json(toClothingItemData(item), { status: 201 });
   } catch (e) {

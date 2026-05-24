@@ -16,7 +16,7 @@ model ClothingItem {
   colors            String
   tags              String
   style             String
-  imageUrl          String
+  imageUrl          String?
   imageBgRemovedUrl String?
   wornCount         Int       @default(0)
   lastWornAt        DateTime?

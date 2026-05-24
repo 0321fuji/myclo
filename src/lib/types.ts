@@ -10,7 +10,7 @@ export interface ClothingItemData {
   colors: string[];
   tags: string[];
   style: StyleType;
-  imageUrl: string;
+  imageUrl: string | null;
   imageBgRemovedUrl: string | null;
   wornCount: number;
   lastWornAt: string | null;
