@@ -6,6 +6,11 @@ import { getCoordinator } from "@/lib/coordinators";
 import { buildProfilePromptSnippet } from "@/lib/profile";
 import { getProfileForUser } from "@/lib/profile-server";
 import { buildTrendsPromptSnippet } from "@/lib/trends";
+import {
+  ALL_KNOWLEDGE_MODULES,
+  selectKnowledgeModules,
+  formatModulesForPrompt,
+} from "@/lib/shiki";
 
 let openai: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {
@@ -66,9 +71,28 @@ export async function POST(request: NextRequest) {
     const profileSnippet = buildProfilePromptSnippet(profile);
     const trendsSnippet = buildTrendsPromptSnippet(profile?.gender ?? null);
 
+    // ユーザーの最新メッセージから関連ナレッジモジュールを選択
+    const latestUserMessage =
+      [...messages].reverse().find((m) => m.role === "user")?.content || "";
+    const selectedModules = selectKnowledgeModules(
+      latestUserMessage,
+      ALL_KNOWLEDGE_MODULES,
+      coordinatorId
+    );
+    const knowledgeSnippet = formatModulesForPrompt(selectedModules);
+
+    if (selectedModules.length > 0) {
+      console.log(
+        `[coordinator/${coordinatorId}] selected knowledge modules:`,
+        selectedModules.map((m) => m.id)
+      );
+    }
+
     const systemPrompt = `${coordinator.systemPrompt}
 
 ${profileSnippet ? profileSnippet + "\n\n" : ""}${trendsSnippet}
+
+${knowledgeSnippet ? knowledgeSnippet + "\n\n" : ""}
 
 【ユーザーが持っている服一覧（ID付き）】
 ${wardrobeList || "（まだ何も登録されていません）"}
