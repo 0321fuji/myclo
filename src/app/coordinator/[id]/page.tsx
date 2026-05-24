@@ -315,6 +315,33 @@ export default function CoordinatorChatPage({
           </div>
         )}
 
+      {/* Followup chips（会話中：最後のメッセージがアシスタントの返信の時のみ） */}
+      {coordinator.followups &&
+        coordinator.followups.length > 0 &&
+        messages.length > 0 &&
+        messages[messages.length - 1].role === "assistant" &&
+        messages.some((m) => m.role === "user") &&
+        !sending && (
+          <div className="bg-stone-50 px-3 pb-2">
+            <div className="flex items-center gap-1.5 mb-1.5 px-1">
+              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                続けて聞く
+              </span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+              {coordinator.followups.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => sendMessage(s)}
+                  className={`flex-none px-3 py-1.5 rounded-full text-[11px] font-medium bg-white border ${coordinator.accentColor} border-stone-200 active:scale-95 transition-all whitespace-nowrap`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       {/* Input */}
       <div className="bg-white px-3 py-3 border-t border-stone-100">
         <div className="flex items-center gap-2">

@@ -12,6 +12,7 @@ export interface Coordinator {
   greeting: string; // 初回挨拶
   systemPrompt: string; // OpenAIに渡すシステムプロンプト
   starters?: string[]; // 会話開始用のクイックチップ（任意・コーディネーター個性が出る）
+  followups?: string[]; // チャット途中の追問用クイックチップ（最後の返信の下に表示）
 }
 
 export const COORDINATORS: Coordinator[] = [
@@ -35,6 +36,14 @@ export const COORDINATORS: Coordinator[] = [
       "オフィスでちょい攻めたい",
       "無難から抜け出したい",
       "持ってる服でブラウン軸を活かしたい",
+    ],
+    followups: [
+      "もっと攻めた感じで",
+      "もっとシンプルに寄せて",
+      "靴を変えてみて",
+      "アウターも追加して",
+      "別の色軸で組み直して",
+      "理由をもう少し詳しく",
     ],
     systemPrompt: `# 役割
 
@@ -193,6 +202,13 @@ export const COORDINATORS: Coordinator[] = [
       "好印象な綺麗めにしたい",
       "1枚で印象を変える方法",
     ],
+    followups: [
+      "もう少しカジュアル寄りで",
+      "もう少しフォーマル寄りで",
+      "小物で印象を変えるなら？",
+      "別のシーンにも使い回せる？",
+      "なぜこの組み合わせか教えて",
+    ],
     systemPrompt: `あなたは29歳の女性スタイリスト「美咲（MISAKI）」です。
 
 【キャラクター設定】
@@ -238,6 +254,13 @@ export const COORDINATORS: Coordinator[] = [
       "黒の着こなしを深掘り",
       "異素材ミックスやってみたい",
       "ジェンダーレスな提案",
+    ],
+    followups: [
+      "もっと尖って",
+      "もう少しだけ大人しめに",
+      "素材違いで提案して",
+      "シルエットで遊んで",
+      "もう一案ちょうだい",
     ],
     systemPrompt: `あなたはミステリアスな実力派スタイリスト「JUKI（ジュキ）」です。
 
@@ -286,6 +309,13 @@ export const COORDINATORS: Coordinator[] = [
       "パーソナルカラーを活かす",
       "今日のリラックスコーデ",
       "気になる部分をカバー",
+    ],
+    followups: [
+      "もう少し体型カバーを優先",
+      "別の色味で提案",
+      "もっとリラックス感を",
+      "縦長効果を意識して",
+      "理由を優しく教えて",
     ],
     systemPrompt: `あなたは34歳の女性スタイリスト「ハル（HARU）」です。
 
