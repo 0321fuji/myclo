@@ -82,8 +82,8 @@ export default function CoordinatorChatPage({
     );
   }
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (textOverride?: string) => {
+    const text = (textOverride ?? input).trim();
     if (!text || sending) return;
 
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
@@ -289,6 +289,32 @@ export default function CoordinatorChatPage({
         )}
       </div>
 
+      {/* Starter chips（最初のメッセージ前のみ表示） */}
+      {coordinator.starters &&
+        coordinator.starters.length > 0 &&
+        !messages.some((m) => m.role === "user") &&
+        !sending && (
+          <div className="bg-stone-50 px-3 pb-2">
+            <div className="flex items-center gap-1.5 mb-1.5 px-1">
+              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                話題のヒント
+              </span>
+              <span className="text-[10px] text-stone-400">タップして相談開始</span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+              {coordinator.starters.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => sendMessage(s)}
+                  className={`flex-none px-3 py-2 rounded-full text-xs font-medium bg-white border ${coordinator.accentColor} border-stone-200 active:scale-95 transition-all whitespace-nowrap shadow-sm`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       {/* Input */}
       <div className="bg-white px-3 py-3 border-t border-stone-100">
         <div className="flex items-center gap-2">
@@ -308,7 +334,7 @@ export default function CoordinatorChatPage({
             className="flex-1 bg-stone-50 rounded-full px-4 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300 disabled:opacity-50"
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || sending}
             className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
               !input.trim() || sending
