@@ -54,10 +54,8 @@ export default function AddClothingPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [bgRemovedUrl, setBgRemovedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [removingBg, setRemovingBg] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -90,48 +88,27 @@ export default function AddClothingPage() {
       if (!data.url) throw new Error("画像URLが取得できませんでした");
       setUploadedUrl(data.url);
 
-      // Auto-analyze & background removal in parallel
+      // Auto-analyze (tags only - bg removal happens in background after save)
       setAnalyzing(true);
-      setRemovingBg(true);
-
-      const tagPromise = fetch("/api/clothing/tag", {
+      const tagRes = await fetch("/api/clothing/tag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: data.url }),
-      })
-        .then((r) => r.json() as Promise<TagSuggestion>)
-        .then((suggestion) => {
-          setName(suggestion.name || "");
-          setCategory(suggestion.category || "tops");
-          setSilhouette(suggestion.silhouette || "regular");
-          setColors(suggestion.colors || []);
-          setTags(suggestion.tags || []);
-          setStyle(suggestion.style || "casual");
-          setAiSuggested(true);
-        })
-        .finally(() => setAnalyzing(false));
-
-      const bgPromise = fetch("/api/clothing/remove-bg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: data.url }),
-      })
-        .then(async (r) => {
-          if (!r.ok) return;
-          const bgData = await r.json();
-          if (bgData.url) setBgRemovedUrl(bgData.url);
-        })
-        .catch((err) => console.error("bg removal failed:", err))
-        .finally(() => setRemovingBg(false));
-
-      await Promise.all([tagPromise, bgPromise]);
+      });
+      const suggestion: TagSuggestion = await tagRes.json();
+      setName(suggestion.name || "");
+      setCategory(suggestion.category || "tops");
+      setSilhouette(suggestion.silhouette || "regular");
+      setColors(suggestion.colors || []);
+      setTags(suggestion.tags || []);
+      setStyle(suggestion.style || "casual");
+      setAiSuggested(true);
     } catch (e) {
       console.error(e);
       setUploadError(e instanceof Error ? e.message : "アップロードに失敗しました");
-      setAnalyzing(false);
-      setRemovingBg(false);
     } finally {
       setUploading(false);
+      setAnalyzing(false);
     }
   }, []);
 
@@ -151,7 +128,6 @@ export default function AddClothingPage() {
           tags,
           style,
           imageUrl: uploadedUrl,
-          imageBgRemovedUrl: bgRemovedUrl,
         }),
       });
       if (!res.ok) {
@@ -201,25 +177,12 @@ export default function AddClothingPage() {
           {imagePreview ? (
             <div className="relative">
               <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
-                <Image
-                  src={bgRemovedUrl || imagePreview}
-                  alt="preview"
-                  fill
-                  className="object-contain"
-                  sizes="448px"
-                  unoptimized={!!bgRemovedUrl}
-                />
-                {(uploading || analyzing || removingBg) && (
+                <Image src={imagePreview} alt="preview" fill className="object-cover" sizes="448px" />
+                {(uploading || analyzing) && (
                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
                     <Sparkles size={28} className="text-rose-300 animate-pulse" />
                     <p className="text-white text-sm font-medium">
-                      {uploading
-                        ? "アップロード中..."
-                        : removingBg && analyzing
-                        ? "AI分析 & 背景削除中..."
-                        : removingBg
-                        ? "背景を削除中..."
-                        : "AIが分析中..."}
+                      {uploading ? "アップロード中..." : "AIが分析中..."}
                     </p>
                   </div>
                 )}
@@ -240,7 +203,6 @@ export default function AddClothingPage() {
                   setImagePreview(null);
                   setImageFile(null);
                   setUploadedUrl(null);
-                  setBgRemovedUrl(null);
                   setAiSuggested(false);
                 }}
                 className="absolute top-2 right-2 bg-white text-stone-500 text-xs px-2 py-1 rounded-full shadow"

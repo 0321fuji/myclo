@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { removeBackgroundAndUpload } from "@/lib/bg-removal";
 import type { ClothingItemData } from "@/lib/types";
 
 function toClothingItemData(item: {
@@ -68,8 +69,23 @@ export async function POST(request: NextRequest) {
         tags: JSON.stringify(body.tags || []),
         style: body.style || "casual",
         imageUrl: body.imageUrl,
-        imageBgRemovedUrl: body.imageBgRemovedUrl || null,
+        imageBgRemovedUrl: null, // will be filled by background task
       },
+    });
+
+    // 背景削除はレスポンス送信後にバックグラウンドで実行
+    // ユーザーは待たずにクローゼットへ戻れる
+    after(async () => {
+      try {
+        const bgRemovedUrl = await removeBackgroundAndUpload(body.imageUrl);
+        await prisma.clothingItem.update({
+          where: { id: item.id },
+          data: { imageBgRemovedUrl: bgRemovedUrl },
+        });
+        console.log(`[bg-removal] success for item ${item.id}`);
+      } catch (err) {
+        console.error(`[bg-removal] failed for item ${item.id}:`, err);
+      }
     });
 
     return NextResponse.json(toClothingItemData(item), { status: 201 });
