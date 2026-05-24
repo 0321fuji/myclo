@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Heart, Check, Shuffle, RefreshCw, Sparkles } from "lucide-react";
-import type { WeatherData, OutfitSuggestion, StyleType } from "@/lib/types";
+import { Heart, Check, Shuffle, RefreshCw, Sparkles, Palette } from "lucide-react";
+import type { WeatherData, OutfitSuggestion, StyleType, ClothingItemData } from "@/lib/types";
 import { STYLE_LABELS, STYLE_EMOJIS } from "@/lib/types";
 import Image from "next/image";
+import ColorDistribution from "@/components/ColorDistribution";
 
 const STYLES: StyleType[] = ["casual", "business", "mode", "traditional", "sport"];
 
@@ -17,6 +18,9 @@ export default function HomePage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [wornSuccess, setWornSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // クローゼットの全アイテム（色ダッシュボード用）
+  const [wardrobeItems, setWardrobeItems] = useState<ClothingItemData[]>([]);
 
   const fetchWeather = useCallback(async (): Promise<WeatherData | null> => {
     setWeatherLoading(true);
@@ -84,6 +88,14 @@ export default function HomePage() {
   useEffect(() => {
     fetchWeather();
   }, [fetchWeather]);
+
+  // クローゼットのアイテムを取得（色ダッシュボード用、DB読みだけなので軽い）
+  useEffect(() => {
+    fetch("/api/clothing")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setWardrobeItems(data))
+      .catch(() => {});
+  }, []);
 
   const handleStyleChange = (style: StyleType) => {
     setActiveStyle(style);
@@ -301,6 +313,24 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* カラーバランスダッシュボード */}
+      {wardrobeItems.length > 0 && (
+        <div className="px-5 mt-6">
+          <div className="bg-white rounded-3xl shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
+                <Palette size={14} className="text-rose-500" />
+              </div>
+              <h2 className="text-sm font-bold text-stone-800">カラーバランス</h2>
+            </div>
+            <p className="text-[11px] text-stone-400 mb-4">
+              偏りがあるとコーデの幅が狭まります
+            </p>
+            <ColorDistribution items={wardrobeItems} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
