@@ -73,11 +73,35 @@ export default function ClosetPage() {
     <div className="pb-28">
       {/* Header */}
       <div className="bg-white px-5 pt-12 pb-4 border-b border-stone-100">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-[10px] font-black tracking-widest text-rose-400 mb-0.5">MYCLO</p>
             <h1 className="text-2xl font-bold text-stone-800">クローゼット</h1>
-            <p className="text-xs text-stone-400 mt-0.5">{items.length}着登録中</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-stone-400">{items.length}着登録中</p>
+              <span className="text-stone-200">·</span>
+              {/* View Toggle */}
+              <div className="flex bg-stone-100 rounded-full p-0.5">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+                    viewMode === "grid" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
+                  }`}
+                  aria-label="グリッド表示"
+                >
+                  <LayoutGrid size={12} />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+                    viewMode === "list" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
+                  }`}
+                  aria-label="リスト表示"
+                >
+                  <List size={12} />
+                </button>
+              </div>
+            </div>
           </div>
           <Link
             href="/closet/add"
@@ -88,51 +112,28 @@ export default function ClosetPage() {
           </Link>
         </div>
 
-        {/* Category Filter + View toggle */}
-        <div className="flex items-center gap-2">
-          <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex-none flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  activeCategory === cat
-                    ? "bg-stone-800 text-white"
-                    : "bg-stone-50 text-stone-500"
+        {/* Category Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`flex-none flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                activeCategory === cat
+                  ? "bg-stone-800 text-white"
+                  : "bg-stone-50 text-stone-500"
+              }`}
+            >
+              {cat === "all" ? "すべて" : CATEGORY_LABELS[cat]}
+              <span
+                className={`text-[10px] ${
+                  activeCategory === cat ? "text-stone-300" : "text-stone-400"
                 }`}
               >
-                {cat === "all" ? "すべて" : CATEGORY_LABELS[cat]}
-                <span
-                  className={`text-[10px] ${
-                    activeCategory === cat ? "text-stone-300" : "text-stone-400"
-                  }`}
-                >
-                  {categoryCount(cat)}
-                </span>
-              </button>
-            ))}
-          </div>
-          {/* View Toggle */}
-          <div className="flex-none flex bg-stone-100 rounded-full p-0.5">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
-                viewMode === "grid" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
-              }`}
-              aria-label="グリッド表示"
-            >
-              <LayoutGrid size={14} />
+                {categoryCount(cat)}
+              </span>
             </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
-                viewMode === "list" ? "bg-white text-stone-700 shadow-sm" : "text-stone-400"
-              }`}
-              aria-label="リスト表示"
-            >
-              <List size={14} />
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
