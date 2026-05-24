@@ -17,6 +17,24 @@ interface TagSuggestion {
 }
 
 const CATEGORIES: Category[] = ["tops", "bottoms", "outerwear", "dress", "shoes", "accessories", "bag"];
+
+const PRESET_COLORS = [
+  { name: "ホワイト", bg: "bg-white", border: "border-stone-200" },
+  { name: "ブラック", bg: "bg-stone-900", border: "border-stone-900" },
+  { name: "グレー", bg: "bg-stone-400", border: "border-stone-400" },
+  { name: "ブラウン", bg: "bg-amber-800", border: "border-amber-800" },
+  { name: "ベージュ", bg: "bg-amber-100", border: "border-amber-200" },
+  { name: "グリーン", bg: "bg-green-500", border: "border-green-500" },
+  { name: "ブルー", bg: "bg-blue-500", border: "border-blue-500" },
+  { name: "パープル", bg: "bg-purple-500", border: "border-purple-500" },
+  { name: "イエロー", bg: "bg-yellow-400", border: "border-yellow-400" },
+  { name: "ピンク", bg: "bg-pink-400", border: "border-pink-400" },
+  { name: "レッド", bg: "bg-red-500", border: "border-red-500" },
+  { name: "オレンジ", bg: "bg-orange-400", border: "border-orange-400" },
+  { name: "シルバー", bg: "bg-slate-300", border: "border-slate-300" },
+  { name: "ゴールド", bg: "bg-yellow-600", border: "border-yellow-600" },
+  { name: "その他", bg: "bg-gradient-to-br from-rose-300 via-blue-300 to-green-300", border: "border-stone-200" },
+];
 const SILHOUETTES: Silhouette[] = ["tight", "wide", "long", "short", "oversized", "regular"];
 const SILHOUETTE_LABELS: Record<Silhouette, string> = {
   tight: "タイト",
@@ -45,7 +63,6 @@ export default function AddClothingPage() {
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
   const [colors, setColors] = useState<string[]>([]);
-  const [colorInput, setColorInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [style, setStyle] = useState<StyleType>("casual");
@@ -112,12 +129,10 @@ export default function AddClothingPage() {
     }
   };
 
-  const addColor = () => {
-    const v = colorInput.trim();
-    if (v && !colors.includes(v)) {
-      setColors([...colors, v]);
-      setColorInput("");
-    }
+  const toggleColor = (colorName: string) => {
+    setColors(prev =>
+      prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
+    );
   };
 
   const addTag = () => {
@@ -298,37 +313,24 @@ export default function AddClothingPage() {
               <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 block">
                 カラー
               </label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {colors.map((c) => (
-                  <span
-                    key={c}
-                    className="flex items-center gap-1 bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full"
-                  >
-                    {c}
+              <div className="grid grid-cols-5 gap-2">
+                {PRESET_COLORS.map((color) => {
+                  const selected = colors.includes(color.name);
+                  return (
                     <button
-                      onClick={() => setColors(colors.filter((x) => x !== c))}
-                      className="text-stone-400 hover:text-stone-600"
+                      key={color.name}
+                      onClick={() => toggleColor(color.name)}
+                      className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
+                        selected ? "border-rose-400 bg-rose-50" : "border-transparent bg-stone-50"
+                      }`}
                     >
-                      ×
+                      <div className={`w-7 h-7 rounded-full ${color.bg} border ${color.border}`} />
+                      <span className={`text-[10px] font-medium ${selected ? "text-rose-500" : "text-stone-500"}`}>
+                        {color.name}
+                      </span>
                     </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={colorInput}
-                  onChange={(e) => setColorInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addColor()}
-                  placeholder="例：ホワイト、ネイビー"
-                  className="flex-1 bg-stone-50 rounded-xl px-3 py-2.5 text-sm text-stone-800 placeholder-stone-300 border border-stone-100 focus:outline-none focus:border-rose-300"
-                />
-                <button
-                  onClick={addColor}
-                  className="bg-stone-100 text-stone-600 px-3 rounded-xl text-sm font-medium"
-                >
-                  追加
-                </button>
+                  );
+                })}
               </div>
             </div>
 

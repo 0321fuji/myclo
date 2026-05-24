@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   "name": "アイテム名（例：白いオーバーサイズTシャツ）",
   "category": "tops | bottoms | outerwear | shoes | accessories | dress | bag のいずれか",
   "silhouette": "tight | wide | long | short | oversized | regular のいずれか",
-  "colors": ["メインカラー", "サブカラー（あれば）"],
+  "colors": ["ホワイト・ブラック・グレー・ブラウン・ベージュ・グリーン・ブルー・パープル・イエロー・ピンク・レッド・オレンジ・シルバー・ゴールド・その他 の中から1〜3個選ぶ"],
   "tags": ["特徴タグ1", "特徴タグ2", "特徴タグ3"],
   "style": "casual | business | mode | traditional | sport のいずれか（最も合うもの）"
 }`,
