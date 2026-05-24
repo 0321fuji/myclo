@@ -18,7 +18,7 @@ AIパーソナルスタイリストアプリ。Googleログイン認証済みの
 | Styling | Tailwind CSS v4 |
 | Database | PostgreSQL (Supabase) via Prisma v7 |
 | Auth | NextAuth.js v5 (beta) + Google OAuth |
-| AI | OpenAI GPT-4o（タグ付け） / Gemini 2.5 Flash Image（背景削除） |
+| AI | OpenAI GPT-4o（タグ付け） / Gemini 3.1 Flash Image（背景削除） |
 | Image Storage | Cloudinary |
 | Deploy | Vercel |
 
