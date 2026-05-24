@@ -71,6 +71,89 @@ function extractRelevantText(html: string): string {
   return snippets.join(" ... ").substring(0, 1500);
 }
 
+/**
+ * ページからプロダクト画像候補を抽出する
+ * 戻り値は重複削除＆絶対URL化済みの最大8件
+ */
+function extractImageCandidates(html: string, pageUrl: string): string[] {
+  const urls = new Set<string>();
+
+  // 1. og:image（複数あるサイトもある）
+  const ogMatches = [...html.matchAll(
+    /<meta[^>]*(?:property|name)=["']og:image(?::secure_url)?["'][^>]*content=["']([^"']+)["']/gi
+  )];
+  ogMatches.forEach((m) => urls.add(m[1]));
+
+  // 2. <link rel="image_src">
+  const linkMatch = html.match(/<link[^>]*rel=["']image_src["'][^>]*href=["']([^"']+)["']/i);
+  if (linkMatch) urls.add(linkMatch[1]);
+
+  // 3. JSON-LD構造化データの image
+  const jsonLdMatches = [...html.matchAll(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  )];
+  for (const m of jsonLdMatches) {
+    try {
+      const data = JSON.parse(m[1].trim());
+      const collect = (val: unknown) => {
+        if (typeof val === "string") urls.add(val);
+        else if (Array.isArray(val)) val.forEach(collect);
+        else if (val && typeof val === "object" && "url" in val) {
+          collect((val as { url: unknown }).url);
+        }
+      };
+      const arr = Array.isArray(data) ? data : [data];
+      for (const item of arr) {
+        if (item && typeof item === "object" && "image" in item) {
+          collect(item.image);
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  // 4. <img> タグから商品画像っぽいものを拾う
+  // - srcsetがあれば最大サイズを採用
+  // - 小さなアイコン/spacer/transparent gifは除外
+  const imgMatches = [...html.matchAll(/<img[^>]*>/gi)];
+  for (const tag of imgMatches.slice(0, 100)) {
+    // srcset優先
+    const srcsetMatch = tag[0].match(/srcset=["']([^"']+)["']/i);
+    if (srcsetMatch) {
+      const last = srcsetMatch[1].split(",").pop()?.trim().split(/\s+/)[0];
+      if (last) urls.add(last);
+    } else {
+      const srcMatch = tag[0].match(/(?:data-src|src)=["']([^"']+)["']/i);
+      if (srcMatch) {
+        const src = srcMatch[1];
+        // ノイズフィルタ
+        if (
+          !src.startsWith("data:") &&
+          !src.includes("base64") &&
+          !src.match(/\/(icon|logo|spacer|sprite|placeholder|btn_|nav_)/i) &&
+          !src.match(/\.(svg)(\?|$)/i) // SVGアイコンを除外
+        ) {
+          urls.add(src);
+        }
+      }
+    }
+  }
+
+  // 絶対URL化＋重複除去
+  const absolute: string[] = [];
+  for (const u of urls) {
+    try {
+      const abs = new URL(u, pageUrl).toString();
+      if (!absolute.includes(abs)) absolute.push(abs);
+    } catch {
+      // invalid URL
+    }
+  }
+
+  return absolute.slice(0, 8);
+}
+
 function decodeHtml(str: string): string {
   return str
     .replace(/&amp;/g, "&")
@@ -131,24 +214,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. メタ情報を抽出
+    // 2. メタ情報＆画像候補を抽出
     const ogImage = extractMeta(html, "og:image") || extractMeta(html, "twitter:image");
     const ogTitle = extractMeta(html, "og:title") || extractTitle(html);
     const ogDescription =
       extractMeta(html, "og:description") || extractMeta(html, "description");
     const pageText = extractRelevantText(html);
+    const candidates = extractImageCandidates(html, url);
 
-    if (!ogImage) {
+    if (!ogImage && candidates.length === 0) {
       return NextResponse.json(
         { error: "商品画像が見つかりませんでした" },
         { status: 400 }
       );
     }
 
-    // 3. og:image を Cloudinary にアップロード（外部URL依存を避けるため自前保存）
+    // og:imageを先頭に置き、候補一覧を整える
+    const primary = ogImage || candidates[0];
+    const orderedCandidates = [
+      primary,
+      ...candidates.filter((c) => c !== primary),
+    ].slice(0, 8);
+
+    // 3. primary画像を Cloudinary にアップロード（即座に使えるデフォルト用）
     let uploadedImageUrl: string;
     try {
-      const uploadResult = await cloudinary.uploader.upload(ogImage, {
+      const uploadResult = await cloudinary.uploader.upload(primary, {
         folder: "myclo",
         resource_type: "image",
       });
@@ -166,6 +257,7 @@ export async function POST(request: NextRequest) {
       // AIなしのフォールバック
       return NextResponse.json({
         imageUrl: uploadedImageUrl,
+        imageCandidates: orderedCandidates,
         name: ogTitle || "服アイテム",
         category: "tops",
         silhouette: "regular",
@@ -222,11 +314,13 @@ ${pageText.substring(0, 1000)}
       const data = JSON.parse(cleaned);
       return NextResponse.json({
         imageUrl: uploadedImageUrl,
+        imageCandidates: orderedCandidates,
         ...data,
       });
     } catch {
       return NextResponse.json({
         imageUrl: uploadedImageUrl,
+        imageCandidates: orderedCandidates,
         name: ogTitle || "服アイテム",
         category: "tops",
         silhouette: "regular",

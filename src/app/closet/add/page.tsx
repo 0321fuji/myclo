@@ -65,6 +65,9 @@ export default function AddClothingPage() {
   const [urlInput, setUrlInput] = useState("");
   const [fetchingUrl, setFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [imageCandidates, setImageCandidates] = useState<string[]>([]);
+  const [selectedCandidateIdx, setSelectedCandidateIdx] = useState<number>(0);
+  const [swappingImage, setSwappingImage] = useState(false);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("tops");
@@ -138,6 +141,8 @@ export default function AddClothingPage() {
         setUploadedUrl(data.imageUrl);
         setImagePreview(data.imageUrl);
       }
+      setImageCandidates(data.imageCandidates || []);
+      setSelectedCandidateIdx(0);
       setName(data.name || "");
       setCategory(data.category || "tops");
       setSilhouette(data.silhouette || "regular");
@@ -152,6 +157,29 @@ export default function AddClothingPage() {
       setUrlError(e instanceof Error ? e.message : "商品情報の取得に失敗しました");
     } finally {
       setFetchingUrl(false);
+    }
+  };
+
+  const handleSwapImage = async (idx: number) => {
+    if (idx === selectedCandidateIdx) return;
+    const externalUrl = imageCandidates[idx];
+    if (!externalUrl) return;
+    setSwappingImage(true);
+    setSelectedCandidateIdx(idx);
+    try {
+      const res = await fetch("/api/upload/from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: externalUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "画像切替に失敗");
+      setUploadedUrl(data.url);
+      setImagePreview(data.url);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSwappingImage(false);
     }
   };
 
@@ -283,16 +311,54 @@ export default function AddClothingPage() {
           {imagePreview ? (
             <div className="relative">
               <div className="aspect-square rounded-2xl overflow-hidden bg-stone-50 relative">
-                <Image src={imagePreview} alt="preview" fill className="object-cover" sizes="448px" />
-                {(uploading || analyzing) && (
+                <Image src={imagePreview} alt="preview" fill className="object-cover" sizes="448px" unoptimized />
+                {(uploading || analyzing || swappingImage) && (
                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
                     <Sparkles size={28} className="text-rose-300 animate-pulse" />
                     <p className="text-white text-sm font-medium">
-                      {uploading ? "アップロード中..." : "AIが分析中..."}
+                      {uploading
+                        ? "アップロード中..."
+                        : swappingImage
+                        ? "画像を切替中..."
+                        : "AIが分析中..."}
                     </p>
                   </div>
                 )}
               </div>
+
+              {/* 候補画像ピッカー（URL登録時のみ） */}
+              {imageCandidates.length > 1 && (
+                <div className="mt-3">
+                  <p className="text-[11px] text-stone-500 mb-2 flex items-center gap-1">
+                    <Sparkles size={11} className="text-rose-400" />
+                    色違い？別の画像に変更できます
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {imageCandidates.map((cand, i) => {
+                      const isSelected = i === selectedCandidateIdx;
+                      return (
+                        <button
+                          key={cand}
+                          onClick={() => handleSwapImage(i)}
+                          disabled={swappingImage}
+                          className={`flex-none w-16 h-16 rounded-xl overflow-hidden border-2 transition-all relative ${
+                            isSelected ? "border-rose-400" : "border-transparent opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={cand}
+                            alt={`候補${i + 1}`}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {aiSuggested && !analyzing && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-500 font-medium">
                   <Sparkles size={12} />
@@ -309,6 +375,8 @@ export default function AddClothingPage() {
                   setImagePreview(null);
                   setImageFile(null);
                   setUploadedUrl(null);
+                  setImageCandidates([]);
+                  setSelectedCandidateIdx(0);
                   setAiSuggested(false);
                 }}
                 className="absolute top-2 right-2 bg-white text-stone-500 text-xs px-2 py-1 rounded-full shadow"
