@@ -58,6 +58,8 @@ export default function AddClothingPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("tops");
@@ -70,6 +72,8 @@ export default function AddClothingPage() {
 
   const handleFileSelect = useCallback(async (file: File) => {
     setImageFile(file);
+    setUploadError(null);
+    setSaveError(null);
     const preview = URL.createObjectURL(file);
     setImagePreview(preview);
 
@@ -79,7 +83,9 @@ export default function AddClothingPage() {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`アップロード失敗 (${res.status})`);
       const data = await res.json();
+      if (!data.url) throw new Error("画像URLが取得できませんでした");
       setUploadedUrl(data.url);
 
       // Auto-analyze
@@ -99,6 +105,7 @@ export default function AddClothingPage() {
       setAiSuggested(true);
     } catch (e) {
       console.error(e);
+      setUploadError(e instanceof Error ? e.message : "アップロードに失敗しました");
     } finally {
       setUploading(false);
       setAnalyzing(false);
@@ -108,8 +115,9 @@ export default function AddClothingPage() {
   const handleSave = async () => {
     if (!uploadedUrl || !name) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      await fetch("/api/clothing", {
+      const res = await fetch("/api/clothing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -122,8 +130,15 @@ export default function AddClothingPage() {
           imageUrl: uploadedUrl,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `保存失敗 (${res.status})`);
+      }
       setSaved(true);
       setTimeout(() => router.push("/closet"), 1000);
+    } catch (e) {
+      console.error(e);
+      setSaveError(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -176,6 +191,11 @@ export default function AddClothingPage() {
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-500 font-medium">
                   <Sparkles size={12} />
                   AIが自動でタグを設定しました。内容を確認してください。
+                </div>
+              )}
+              {uploadError && (
+                <div className="mt-2 text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">
+                  ⚠️ {uploadError}
                 </div>
               )}
               <button
@@ -373,10 +393,17 @@ export default function AddClothingPage() {
               </div>
             </div>
 
+            {/* Save Error */}
+            {saveError && (
+              <div className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">
+                ⚠️ {saveError}
+              </div>
+            )}
+
             {/* Save Button */}
             <button
               onClick={handleSave}
-              disabled={!name || saving || saved || analyzing || uploading}
+              disabled={!name || !uploadedUrl || saving || saved || analyzing || uploading}
               className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-semibold text-base transition-all ${
                 saved
                   ? "bg-emerald-400 text-white"
