@@ -36,15 +36,15 @@ export const AGE_GROUP_LABELS: Record<AgeGroup, string> = {
   "50s+": "50代以上",
 };
 
-export const BODY_TYPE_LABELS: Record<BodyType, string> = {
+// 女性向けラベル・ヒント
+export const BODY_TYPE_LABELS_FEMALE: Record<BodyType, string> = {
   straight: "ストレート",
   wave: "ウェーブ",
   natural: "ナチュラル",
   unknown: "わからない",
 };
 
-// 骨格タイプごとの似合うコーデ特徴（AIへのヒント）
-export const BODY_TYPE_HINTS: Record<BodyType, string> = {
+export const BODY_TYPE_HINTS_FEMALE: Record<BodyType, string> = {
   straight:
     "肉付きにメリハリがある体型。Iラインや直線的なシルエット、ハリのある素材（コットン・デニム）、ベーシックなVネックが似合う。フリル・ダボつき・厚手ニットは苦手。",
   wave:
@@ -53,6 +53,37 @@ export const BODY_TYPE_HINTS: Record<BodyType, string> = {
     "骨や関節がしっかり見える体型。ゆったりオーバーサイズ、リネン・コーデュロイ・厚手ニットなどラフ素材、ロング丈が似合う。タイト・ハリのある素材は骨格が目立つので苦手。",
   unknown: "",
 };
+
+// 男性向けラベル・ヒント（馴染みのある表現に）
+export const BODY_TYPE_LABELS_MALE: Record<BodyType, string> = {
+  straight: "がっしり型",
+  wave: "細身型",
+  natural: "フレーム型",
+  unknown: "わからない",
+};
+
+export const BODY_TYPE_HINTS_MALE: Record<BodyType, string> = {
+  straight:
+    "胸板・肩幅に厚みがあり筋肉が付きやすい体型。シンプルなクルーネック、テーラードジャケット、ストレートデニム、ハリのある素材が似合う。オーバーサイズすぎる服、装飾の多い服、薄手のシアー素材は着られている感が出る。",
+  wave:
+    "細身でフレームが華奢、首肩のラインがすっきりした体型。ニット、軽い素材、ジャストサイズ〜やや細身のシルエットが似合う。厚手の重い素材、極端なオーバーサイズは服に着られている印象になる。",
+  natural:
+    "骨や関節がしっかり見える縦長・四角フレーム。オーバーサイズシャツ、リネンやコーデュロイなどラフ素材、ロング丈、ワイドパンツが似合う。タイトフィット・薄手で身体のラインが出る服は骨格が浮く。",
+  unknown: "",
+};
+
+// 性別に応じてラベル・ヒントを返す関数
+export function getBodyTypeLabels(gender: string | null): Record<BodyType, string> {
+  return gender === "male" ? BODY_TYPE_LABELS_MALE : BODY_TYPE_LABELS_FEMALE;
+}
+
+export function getBodyTypeHints(gender: string | null): Record<BodyType, string> {
+  return gender === "male" ? BODY_TYPE_HINTS_MALE : BODY_TYPE_HINTS_FEMALE;
+}
+
+// 後方互換のため（既存コードで使用中）
+export const BODY_TYPE_LABELS = BODY_TYPE_LABELS_FEMALE;
+export const BODY_TYPE_HINTS = BODY_TYPE_HINTS_FEMALE;
 
 export const PERSONAL_COLOR_LABELS: Record<PersonalColor, string> = {
   spring: "イエベ春",
@@ -122,8 +153,9 @@ export function buildProfilePromptSnippet(profile: UserProfileData | null): stri
   if (basic.length) lines.push(`- 基本: ${basic.join(" / ")}`);
 
   if (profile.bodyType && profile.bodyType !== "unknown") {
-    const hint = BODY_TYPE_HINTS[profile.bodyType];
-    lines.push(`- 骨格: ${BODY_TYPE_LABELS[profile.bodyType]} → ${hint}`);
+    const labels = getBodyTypeLabels(profile.gender);
+    const hints = getBodyTypeHints(profile.gender);
+    lines.push(`- 体型: ${labels[profile.bodyType]} → ${hints[profile.bodyType]}`);
   }
 
   if (profile.personalColor && profile.personalColor !== "unknown") {

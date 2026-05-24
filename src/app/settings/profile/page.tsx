@@ -14,8 +14,8 @@ import type {
 import {
   GENDER_LABELS,
   AGE_GROUP_LABELS,
-  BODY_TYPE_LABELS,
-  BODY_TYPE_HINTS,
+  getBodyTypeLabels,
+  getBodyTypeHints,
   PERSONAL_COLOR_LABELS,
   PERSONAL_COLOR_HINTS,
   OCCUPATION_LABELS,
@@ -93,6 +93,9 @@ export default function ProfileSettingsPage() {
   }
 
   const completion = calculateCompletion(profile);
+  const bodyTypeLabels = getBodyTypeLabels(profile.gender);
+  const bodyTypeHints = getBodyTypeHints(profile.gender);
+  const bodyTypeSectionTitle = profile.gender === "male" ? "体型タイプ" : "骨格タイプ";
 
   return (
     <div className="pb-28">
@@ -170,21 +173,21 @@ export default function ProfileSettingsPage() {
         </Section>
 
         {/* ===== Body type ===== */}
-        <Section title="骨格タイプ" hint="わからない場合は飛ばしてOK">
+        <Section title={bodyTypeSectionTitle} hint="わからない場合は飛ばしてOK">
           <div className="flex flex-wrap gap-2">
-            {(Object.keys(BODY_TYPE_LABELS) as BodyType[]).map((b) => (
+            {(Object.keys(bodyTypeLabels) as BodyType[]).map((b) => (
               <Chip
                 key={b}
                 selected={profile.bodyType === b}
                 onClick={() => update("bodyType", profile.bodyType === b ? null : b)}
               >
-                {BODY_TYPE_LABELS[b]}
+                {bodyTypeLabels[b]}
               </Chip>
             ))}
           </div>
           {profile.bodyType && profile.bodyType !== "unknown" && (
             <p className="mt-2 text-[11px] text-stone-500 bg-stone-50 rounded-xl px-3 py-2 leading-relaxed">
-              {BODY_TYPE_HINTS[profile.bodyType]}
+              {bodyTypeHints[profile.bodyType]}
             </p>
           )}
         </Section>
