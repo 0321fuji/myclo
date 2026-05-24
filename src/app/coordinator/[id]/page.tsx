@@ -2,13 +2,27 @@
 
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Send, RotateCcw } from "lucide-react";
+import { ChevronLeft, Send, RotateCcw, Check, ImageOff } from "lucide-react";
 import { getCoordinator } from "@/lib/coordinators";
+
+interface SuggestedItem {
+  id: string;
+  name: string;
+  brand: string | null;
+  productName: string | null;
+  category: string;
+  imageUrl: string | null;
+  imageBgRemovedUrl: string | null;
+  wornCount: number;
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  suggestedItems?: SuggestedItem[];
+  worn?: boolean; // 「このコーデにする」を押したか
 }
 
 export default function CoordinatorChatPage({
@@ -89,12 +103,42 @@ export default function CoordinatorChatPage({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "返信エラー");
-      setMessages([...newMessages, { role: "assistant", content: data.reply }]);
+      setMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: data.reply,
+          suggestedItems: data.suggestedItems || [],
+        },
+      ]);
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "送信に失敗しました");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleWearOutfit = async (msgIdx: number, items: SuggestedItem[]) => {
+    // 楽観更新
+    setMessages((prev) =>
+      prev.map((m, i) => (i === msgIdx ? { ...m, worn: true } : m))
+    );
+    try {
+      await Promise.all(
+        items.map((it) =>
+          fetch(`/api/clothing/${it.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              wornCount: it.wornCount + 1,
+              lastWornAt: new Date().toISOString(),
+            }),
+          })
+        )
+      );
+    } catch (e) {
+      console.error("[wear-outfit] failed:", e);
     }
   };
 
@@ -137,26 +181,89 @@ export default function CoordinatorChatPage({
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}
-          >
-            {m.role === "assistant" && (
+          <div key={i}>
+            <div
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}
+            >
+              {m.role === "assistant" && (
+                <div
+                  className={`w-7 h-7 rounded-full ${coordinator.bgColor} flex items-center justify-center text-sm flex-shrink-0`}
+                >
+                  {coordinator.emoji}
+                </div>
+              )}
               <div
-                className={`w-7 h-7 rounded-full ${coordinator.bgColor} flex items-center justify-center text-sm flex-shrink-0`}
+                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                  m.role === "user"
+                    ? "bg-rose-400 text-white rounded-br-md"
+                    : "bg-white text-stone-700 rounded-bl-md border border-stone-100"
+                }`}
               >
-                {coordinator.emoji}
+                {m.content}
+              </div>
+            </div>
+
+            {/* 提案アイテムのサムネ表示 */}
+            {m.role === "assistant" && m.suggestedItems && m.suggestedItems.length > 0 && (
+              <div className="mt-2 ml-9">
+                <div className="bg-white border border-stone-100 rounded-2xl p-3 shadow-sm">
+                  <p className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-2">
+                    提案コーデ（{m.suggestedItems.length}点）
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {m.suggestedItems.map((item) => {
+                      const src = item.imageBgRemovedUrl || item.imageUrl;
+                      return (
+                        <Link
+                          key={item.id}
+                          href={`/closet/${item.id}`}
+                          className="block"
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden bg-stone-50 relative">
+                            {src ? (
+                              <Image
+                                src={src}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                                sizes="100px"
+                                unoptimized={!!item.imageBgRemovedUrl}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-50">
+                                <ImageOff size={16} className="text-stone-300" />
+                              </div>
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-1.5 py-1">
+                              <p className="text-white text-[9px] font-medium truncate">
+                                {item.name}
+                              </p>
+                            </div>
+                          </div>
+                          {item.brand && (
+                            <p className="text-[9px] text-stone-400 truncate mt-0.5 px-0.5">
+                              {item.brand}
+                            </p>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => handleWearOutfit(i, m.suggestedItems!)}
+                    disabled={m.worn}
+                    className={`w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold transition-all ${
+                      m.worn
+                        ? "bg-emerald-100 text-emerald-600"
+                        : "bg-stone-800 text-white"
+                    }`}
+                  >
+                    <Check size={14} />
+                    {m.worn ? "今日のコーデに決定しました" : "このコーデにする"}
+                  </button>
+                </div>
               </div>
             )}
-            <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-                m.role === "user"
-                  ? "bg-rose-400 text-white rounded-br-md"
-                  : "bg-white text-stone-700 rounded-bl-md border border-stone-100"
-              }`}
-            >
-              {m.content}
-            </div>
           </div>
         ))}
         {sending && (
