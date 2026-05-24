@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
       category: "tops",
       silhouette: "regular",
       colors: ["ブラック"],
+      materials: [],
       tags: ["シンプル"],
       style: "casual",
     });
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
   "category": "tops | bottoms | outerwear | shoes | accessories | dress | bag のいずれか",
   "silhouette": "tight | wide | long | short | oversized | regular のいずれか",
   "colors": ["ホワイト・ブラック・グレー・ブラウン・ベージュ・グリーン・ブルー・パープル・イエロー・ピンク・レッド・オレンジ・シルバー・ゴールド・その他 の中から1〜3個選ぶ"],
+  "materials": ["コットン・ウール / 毛・リネン / 麻・ポリエステル・ナイロン・レザー・デニム・コーデュロイ・スエード の中から、画像から推測できる素材を選ぶ（自信がなければ空配列[]でOK、複数素材の場合は複数選ぶ）"],
   "tags": ["特徴タグ1", "特徴タグ2", "特徴タグ3"],
   "style": "casual | business | mode | traditional | sport のいずれか（最も合うもの）"
 }`,
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
       category: "tops",
       silhouette: "regular",
       colors: ["ブラック"],
+      materials: [],
       tags: ["シンプル"],
       style: "casual",
     });

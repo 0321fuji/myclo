@@ -11,6 +11,7 @@ function toClothingItemData(item: {
   category: string;
   silhouette: string | null;
   colors: string;
+  materials: string;
   tags: string;
   style: string;
   imageUrl: string | null;
@@ -25,6 +26,7 @@ function toClothingItemData(item: {
     silhouette: item.silhouette as ClothingItemData["silhouette"],
     style: item.style as ClothingItemData["style"],
     colors: JSON.parse(item.colors),
+    materials: JSON.parse(item.materials || "[]"),
     tags: JSON.parse(item.tags),
     lastWornAt: item.lastWornAt?.toISOString() ?? null,
     createdAt: item.createdAt.toISOString(),
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
         category: body.category,
         silhouette: body.silhouette || null,
         colors: JSON.stringify(body.colors || []),
+        materials: JSON.stringify(body.materials || []),
         tags: JSON.stringify(body.tags || []),
         style: body.style || "casual",
         imageUrl: body.imageUrl || null,

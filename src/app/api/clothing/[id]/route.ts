@@ -39,6 +39,7 @@ export async function GET(
     return NextResponse.json({
       ...item,
       colors: JSON.parse(item.colors),
+      materials: JSON.parse(item.materials || "[]"),
       tags: JSON.parse(item.tags),
       lastWornAt: item.lastWornAt?.toISOString() ?? null,
       createdAt: item.createdAt.toISOString(),
@@ -85,6 +86,7 @@ export async function PATCH(
         ...(body.silhouette !== undefined && { silhouette: body.silhouette || null }),
         ...(body.style !== undefined && { style: body.style }),
         ...(body.colors !== undefined && { colors: JSON.stringify(body.colors) }),
+        ...(body.materials !== undefined && { materials: JSON.stringify(body.materials) }),
         ...(body.tags !== undefined && { tags: JSON.stringify(body.tags) }),
         ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl || null }),
         // 画像を新しく追加 or 変更した場合は背景削除URLをリセット

@@ -2,12 +2,26 @@ export type Category = "tops" | "bottoms" | "outerwear" | "shoes" | "accessories
 export type Silhouette = "tight" | "wide" | "long" | "short" | "oversized" | "regular";
 export type StyleType = "casual" | "business" | "mode" | "traditional" | "sport";
 
+export const MATERIALS = [
+  "コットン",
+  "ウール / 毛",
+  "リネン / 麻",
+  "ポリエステル",
+  "ナイロン",
+  "レザー",
+  "デニム",
+  "コーデュロイ",
+  "スエード",
+] as const;
+export type Material = (typeof MATERIALS)[number];
+
 export interface ClothingItemData {
   id: string;
   name: string;
   category: Category;
   silhouette: Silhouette | null;
   colors: string[];
+  materials: string[];
   tags: string[];
   style: StyleType;
   imageUrl: string | null;

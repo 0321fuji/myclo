@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { Camera, Upload, Sparkles, ChevronLeft, Check } from "lucide-react";
 import Image from "next/image";
 import type { Category, Silhouette, StyleType } from "@/lib/types";
-import { CATEGORY_LABELS, STYLE_LABELS } from "@/lib/types";
+import { CATEGORY_LABELS, STYLE_LABELS, MATERIALS } from "@/lib/types";
 
 interface TagSuggestion {
   name: string;
   category: Category;
   silhouette: Silhouette;
   colors: string[];
+  materials: string[];
   tags: string[];
   style: StyleType;
 }
@@ -65,6 +66,7 @@ export default function AddClothingPage() {
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
   const [colors, setColors] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [style, setStyle] = useState<StyleType>("casual");
@@ -100,6 +102,7 @@ export default function AddClothingPage() {
       setCategory(suggestion.category || "tops");
       setSilhouette(suggestion.silhouette || "regular");
       setColors(suggestion.colors || []);
+      setMaterials(suggestion.materials || []);
       setTags(suggestion.tags || []);
       setStyle(suggestion.style || "casual");
       setAiSuggested(true);
@@ -125,6 +128,7 @@ export default function AddClothingPage() {
           category,
           silhouette,
           colors,
+          materials,
           tags,
           style,
           imageUrl: uploadedUrl || null,
@@ -147,6 +151,12 @@ export default function AddClothingPage() {
   const toggleColor = (colorName: string) => {
     setColors(prev =>
       prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
+    );
+  };
+
+  const toggleMaterial = (m: string) => {
+    setMaterials(prev =>
+      prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
     );
   };
 
@@ -354,6 +364,34 @@ export default function AddClothingPage() {
                       <span className={`text-[10px] font-medium ${selected ? "text-rose-500" : "text-stone-500"}`}>
                         {color.name}
                       </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Materials */}
+            <div>
+              <div className="flex items-baseline gap-2 mb-2">
+                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  素材
+                </label>
+                <span className="text-[10px] text-stone-400">任意・複数選択可</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {MATERIALS.map((m) => {
+                  const selected = materials.includes(m);
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => toggleMaterial(m)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        selected
+                          ? "bg-amber-100 text-amber-700 border border-amber-200"
+                          : "bg-stone-50 text-stone-500 border border-stone-100"
+                      }`}
+                    >
+                      {m}
                     </button>
                   );
                 })}

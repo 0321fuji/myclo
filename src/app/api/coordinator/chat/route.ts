@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
     const wardrobeList = items
       .map((it) => {
         const colors = JSON.parse(it.colors) as string[];
-        return `- ${it.name}（${it.category}・${it.style}・${colors.join("/")}${it.silhouette ? "・" + it.silhouette : ""}）`;
+        const materials = JSON.parse(it.materials || "[]") as string[];
+        const matStr = materials.length > 0 ? `・素材:${materials.join("/")}` : "";
+        return `- ${it.name}（${it.category}・${it.style}・${colors.join("/")}${it.silhouette ? "・" + it.silhouette : ""}${matStr}）`;
       })
       .join("\n");
 

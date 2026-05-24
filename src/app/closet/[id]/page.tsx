@@ -14,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Category, Silhouette, StyleType, ClothingItemData } from "@/lib/types";
-import { CATEGORY_LABELS, STYLE_LABELS } from "@/lib/types";
+import { CATEGORY_LABELS, STYLE_LABELS, MATERIALS } from "@/lib/types";
 
 const CATEGORIES: Category[] = ["tops", "bottoms", "outerwear", "dress", "shoes", "accessories", "bag"];
 const SILHOUETTES: Silhouette[] = ["tight", "wide", "long", "short", "oversized", "regular"];
@@ -69,6 +69,7 @@ export default function ClothingDetailPage({
   const [category, setCategory] = useState<Category>("tops");
   const [silhouette, setSilhouette] = useState<Silhouette>("regular");
   const [colors, setColors] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [style, setStyle] = useState<StyleType>("casual");
@@ -85,6 +86,7 @@ export default function ClothingDetailPage({
         setCategory(data.category);
         setSilhouette(data.silhouette || "regular");
         setColors(data.colors);
+        setMaterials(data.materials || []);
         setTags(data.tags);
         setStyle(data.style);
       } catch (e) {
@@ -117,6 +119,7 @@ export default function ClothingDetailPage({
       setItem({
         ...updated,
         colors: JSON.parse(updated.colors),
+        materials: JSON.parse(updated.materials || "[]"),
         tags: JSON.parse(updated.tags),
       });
       setSavedMsg("写真を追加しました");
@@ -136,13 +139,14 @@ export default function ClothingDetailPage({
       const res = await fetch(`/api/clothing/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, category, silhouette, style, colors, tags }),
+        body: JSON.stringify({ name, category, silhouette, style, colors, materials, tags }),
       });
       if (!res.ok) throw new Error("保存に失敗");
       const updated = await res.json();
       setItem({
         ...updated,
         colors: JSON.parse(updated.colors),
+        materials: JSON.parse(updated.materials || "[]"),
         tags: JSON.parse(updated.tags),
       });
       setEditing(false);
@@ -164,6 +168,12 @@ export default function ClothingDetailPage({
   const toggleColor = (colorName: string) => {
     setColors((prev) =>
       prev.includes(colorName) ? prev.filter((c) => c !== colorName) : [...prev, colorName]
+    );
+  };
+
+  const toggleMaterial = (m: string) => {
+    setMaterials((prev) =>
+      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
     );
   };
 
@@ -359,6 +369,22 @@ export default function ClothingDetailPage({
             </div>
             <div>
               <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">
+                素材
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {item.materials && item.materials.length > 0 ? (
+                  item.materials.map((m) => (
+                    <span key={m} className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">
+                      {m}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-stone-400">—</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">
                 タグ
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -471,6 +497,33 @@ export default function ClothingDetailPage({
                       <span className={`text-[10px] font-medium ${selected ? "text-rose-500" : "text-stone-500"}`}>
                         {color.name}
                       </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-2 mb-2">
+                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                  素材
+                </label>
+                <span className="text-[10px] text-stone-400">複数選択可</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {MATERIALS.map((m) => {
+                  const selected = materials.includes(m);
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => toggleMaterial(m)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        selected
+                          ? "bg-amber-100 text-amber-700 border border-amber-200"
+                          : "bg-stone-50 text-stone-500 border border-stone-100"
+                      }`}
+                    >
+                      {m}
                     </button>
                   );
                 })}

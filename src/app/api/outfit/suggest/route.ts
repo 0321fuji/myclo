@@ -17,6 +17,7 @@ function toClothingItemData(item: {
   category: string;
   silhouette: string | null;
   colors: string;
+  materials: string;
   tags: string;
   style: string;
   imageUrl: string | null;
@@ -31,6 +32,7 @@ function toClothingItemData(item: {
     silhouette: item.silhouette as ClothingItemData["silhouette"],
     style: item.style as ClothingItemData["style"],
     colors: JSON.parse(item.colors),
+    materials: JSON.parse(item.materials || "[]"),
     tags: JSON.parse(item.tags),
     lastWornAt: item.lastWornAt?.toISOString() ?? null,
     createdAt: item.createdAt.toISOString(),

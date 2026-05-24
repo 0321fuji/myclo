@@ -14,6 +14,7 @@ model ClothingItem {
   category          String
   silhouette        String?
   colors            String
+  materials         String   @default("[]")
   tags              String
   style             String
   imageUrl          String?
