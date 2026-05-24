@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Heart, Check, Shuffle, RefreshCw } from "lucide-react";
+import { Heart, Check, Shuffle, RefreshCw, Sparkles } from "lucide-react";
 import type { WeatherData, OutfitSuggestion, StyleType } from "@/lib/types";
 import { STYLE_LABELS, STYLE_EMOJIS } from "@/lib/types";
 import Image from "next/image";
@@ -80,15 +80,18 @@ export default function HomePage() {
     [weather]
   );
 
+  // 初回ロード時は天気のみ取得。コーデ提案はユーザーがボタンを押すまで実行しない（API節約）
   useEffect(() => {
-    fetchWeather().then((w) => {
-      if (w) fetchOutfit(activeStyle, w);
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchWeather();
+  }, [fetchWeather]);
 
   const handleStyleChange = (style: StyleType) => {
     setActiveStyle(style);
-    fetchOutfit(style);
+    // 既に提案を生成済みの場合のみ、新しいスタイルで再生成する
+    // （初めてのスタイル選択時は、CTAボタンを押すまで自動実行しない）
+    if (outfit) {
+      fetchOutfit(style);
+    }
   };
 
   const handleWorn = async () => {
@@ -195,7 +198,31 @@ export default function HomePage() {
               服を登録する →
             </a>
           </div>
-        ) : outfit ? (
+        ) : !outfit ? (
+          // 初回 or リセット時：CTA表示。APIはここで初めて叩かれる
+          <div className="bg-white rounded-3xl p-8 shadow-sm text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
+              <Sparkles size={28} className="text-rose-400" />
+            </div>
+            <p className="text-stone-700 font-bold mb-1">今日のコーデを提案します</p>
+            <p className="text-xs text-stone-400 mb-5 leading-relaxed">
+              天気と<span className="font-semibold">{STYLE_LABELS[activeStyle]}</span>スタイルに合わせて、<br />
+              AIがあなたのクローゼットから組み合わせます
+            </p>
+            <button
+              onClick={() => fetchOutfit(activeStyle)}
+              disabled={!weather || weatherLoading}
+              className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm transition-all ${
+                !weather || weatherLoading
+                  ? "bg-stone-100 text-stone-300"
+                  : "bg-rose-400 text-white shadow-md active:scale-[0.98]"
+              }`}
+            >
+              <Sparkles size={16} />
+              コーデを提案してもらう
+            </button>
+          </div>
+        ) : (
           <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
             <div className="px-5 pt-5 pb-3">
               <p className="text-sm font-bold text-stone-800 mb-1">{outfit.description}</p>
@@ -272,7 +299,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
