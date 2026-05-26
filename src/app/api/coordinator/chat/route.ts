@@ -121,67 +121,108 @@ ${wardrobeList || "（まだ何も登録されていません）"}
 あなたのキャラクター性は絶対に崩さず、上記のトレンドとパーソナリティを踏まえて、本人が気づいていない魅力を引き出すコーデを提案してください。
 `;
 
-    const completion = await ai.chat.completions.create({
+    // OpenAIのストリーミング応答を取得
+    const aiStream = await ai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
-      max_tokens: 400,
+      max_tokens: 500,
       temperature: 0.9,
+      stream: true,
     });
 
-    const rawReply = completion.choices[0].message.content || "";
+    const encoder = new TextEncoder();
+    let fullText = "";
 
-    // <outfit>...</outfit> タグを解析
-    const outfitMatch = rawReply.match(/<outfit>([^<]+)<\/outfit>/);
-    let suggestedItems: typeof items = [];
-    if (outfitMatch) {
-      const ids = outfitMatch[1].split(",").map((s) => s.trim()).filter(Boolean);
-      // 重複除去＋実在チェック
-      const seen = new Set<string>();
-      suggestedItems = ids
-        .map((id) => items.find((it) => it.id === id))
-        .filter((it): it is (typeof items)[number] => {
-          if (!it || seen.has(it.id)) return false;
-          seen.add(it.id);
-          return true;
-        });
-    }
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // チャンクごとに text イベントとして送信
+          for await (const chunk of aiStream) {
+            const delta = chunk.choices[0]?.delta?.content || "";
+            if (delta) {
+              fullText += delta;
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "text", delta })}\n\n`
+                )
+              );
+            }
+          }
 
-    // <followups>...</followups> タグを解析（動的な追問候補）
-    const followupsMatch = rawReply.match(/<followups>([^<]+)<\/followups>/);
-    let suggestedFollowups: string[] = [];
-    if (followupsMatch) {
-      suggestedFollowups = followupsMatch[1]
-        .split("|")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .slice(0, 5);
-    }
+          // 完了したらタグを解析して metadata を送信
+          const outfitMatch = fullText.match(/<outfit>([^<]+)<\/outfit>/);
+          let suggestedItems: typeof items = [];
+          if (outfitMatch) {
+            const ids = outfitMatch[1]
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            const seen = new Set<string>();
+            suggestedItems = ids
+              .map((id) => items.find((it) => it.id === id))
+              .filter((it): it is (typeof items)[number] => {
+                if (!it || seen.has(it.id)) return false;
+                seen.add(it.id);
+                return true;
+              });
+          }
 
-    // ユーザーに見せる本文からはタグを除去
-    const reply = rawReply
-      .replace(/<outfit>[^<]+<\/outfit>/g, "")
-      .replace(/<followups>[^<]+<\/followups>/g, "")
-      .trim();
+          const followupsMatch = fullText.match(
+            /<followups>([^<]+)<\/followups>/
+          );
+          let suggestedFollowups: string[] = [];
+          if (followupsMatch) {
+            suggestedFollowups = followupsMatch[1]
+              .split("|")
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .slice(0, 5);
+          }
 
-    // クライアントが必要とする形に整形
-    const suggestedItemsClient = suggestedItems.map((it) => ({
-      id: it.id,
-      name: it.name,
-      brand: it.brand,
-      productName: it.productName,
-      category: it.category,
-      imageUrl: it.imageUrl,
-      imageBgRemovedUrl: it.imageBgRemovedUrl,
-      wornCount: it.wornCount,
-    }));
+          const suggestedItemsClient = suggestedItems.map((it) => ({
+            id: it.id,
+            name: it.name,
+            brand: it.brand,
+            productName: it.productName,
+            category: it.category,
+            imageUrl: it.imageUrl,
+            imageBgRemovedUrl: it.imageBgRemovedUrl,
+            wornCount: it.wornCount,
+          }));
 
-    return NextResponse.json({
-      reply,
-      suggestedItems: suggestedItemsClient,
-      suggestedFollowups,
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "done",
+                suggestedItems: suggestedItemsClient,
+                suggestedFollowups,
+              })}\n\n`
+            )
+          );
+          controller.close();
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[chat stream] error:", msg);
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "error", error: msg })}\n\n`
+            )
+          );
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

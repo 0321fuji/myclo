@@ -88,7 +88,13 @@ export default function CoordinatorChatPage({
     if (!text || sending) return;
 
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(newMessages);
+    // 暫定のアシスタント空メッセージを追加（ストリーミング受信用）
+    const messagesWithStreamingSlot: ChatMessage[] = [
+      ...newMessages,
+      { role: "assistant", content: "" },
+    ];
+    const streamingIdx = messagesWithStreamingSlot.length - 1;
+    setMessages(messagesWithStreamingSlot);
     setInput("");
     setSending(true);
     setError(null);
@@ -102,24 +108,92 @@ export default function CoordinatorChatPage({
           messages: newMessages,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "返信エラー");
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: data.reply,
-          suggestedItems: data.suggestedItems || [],
-          suggestedFollowups: data.suggestedFollowups || [],
-        },
-      ]);
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `返信エラー (${res.status})`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = "";
+      let accumulated = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+
+        // SSEは "\n\n" で区切られる
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() || "";
+
+        for (const evt of events) {
+          const line = evt.split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+          try {
+            const payload = JSON.parse(line.substring(6));
+            if (payload.type === "text") {
+              accumulated += payload.delta;
+              const display = stripStreamingTags(accumulated, false);
+              setMessages((prev) =>
+                prev.map((m, i) =>
+                  i === streamingIdx ? { ...m, content: display } : m
+                )
+              );
+            } else if (payload.type === "done") {
+              const finalText = stripStreamingTags(accumulated, true);
+              setMessages((prev) =>
+                prev.map((m, i) =>
+                  i === streamingIdx
+                    ? {
+                        ...m,
+                        content: finalText,
+                        suggestedItems: payload.suggestedItems || [],
+                        suggestedFollowups: payload.suggestedFollowups || [],
+                      }
+                    : m
+                )
+              );
+            } else if (payload.type === "error") {
+              throw new Error(payload.error || "ストリーミングエラー");
+            }
+          } catch (parseErr) {
+            console.error("SSE parse error:", parseErr, line);
+          }
+        }
+      }
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "送信に失敗しました");
+      // 失敗時は暫定の空アシスタントメッセージを削除
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setSending(false);
     }
   };
+
+  /**
+   * ストリーミング中のテキストから <outfit> <followups> タグを除外して表示用に整形
+   * @param final 完了済みかどうか（true なら閉じてないタグは諦めて表示）
+   */
+  function stripStreamingTags(text: string, final: boolean): string {
+    let result = text;
+    // 完全に閉じているタグを除去
+    result = result.replace(/<outfit>[^<]*<\/outfit>/g, "");
+    result = result.replace(/<followups>[^<]*<\/followups>/g, "");
+    if (!final) {
+      // 開いてるが閉じてないタグ（ストリーミング途中）を除去
+      result = result.replace(/<outfit>[^<]*$/g, "");
+      result = result.replace(/<followups>[^<]*$/g, "");
+      // 最後に未確定の < があれば隠す（タグ開始の可能性）
+      const ltIdx = result.lastIndexOf("<");
+      if (ltIdx > -1 && result.indexOf(">", ltIdx) === -1) {
+        result = result.substring(0, ltIdx);
+      }
+    }
+    return result.trim();
+  }
 
   const handleWearOutfit = async (msgIdx: number, items: SuggestedItem[]) => {
     // 楽観更新
@@ -201,7 +275,15 @@ export default function CoordinatorChatPage({
                     : "bg-white text-stone-700 rounded-bl-md border border-stone-100"
                 }`}
               >
-                {m.content}
+                {m.role === "assistant" && m.content === "" ? (
+                  <span className="inline-flex gap-1 py-0.5">
+                    <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </span>
+                ) : (
+                  m.content
+                )}
               </div>
             </div>
 
@@ -268,22 +350,6 @@ export default function CoordinatorChatPage({
             )}
           </div>
         ))}
-        {sending && (
-          <div className="flex justify-start items-end gap-2">
-            <div
-              className={`w-7 h-7 rounded-full ${coordinator.bgColor} flex items-center justify-center text-sm`}
-            >
-              {coordinator.emoji}
-            </div>
-            <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 border border-stone-100">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          </div>
-        )}
         {error && (
           <div className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2 text-center">
             ⚠️ {error}
