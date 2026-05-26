@@ -348,9 +348,14 @@ export default function AddClothingPage() {
               )}
 
               {aiSuggested && !analyzing && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-500 font-medium">
-                  <Sparkles size={12} />
-                  AIが自動でタグを設定しました。内容を確認してください。
+                <div className="mt-2 bg-rose-50 rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-xs text-rose-600 font-medium mb-0.5">
+                    <Sparkles size={12} />
+                    AIが自動でタグを設定しました
+                  </div>
+                  <p className="text-[10px] text-rose-500 leading-relaxed">
+                    特に<span className="font-semibold">カテゴリ・色・素材</span>はAIの判定なので、間違っていれば下のボタンから手動で変更してください
+                  </p>
                 </div>
               )}
               {uploadError && (
